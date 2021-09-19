@@ -1,0 +1,56 @@
+<?xml version="1.0" ?>
+<robot name="turntable" xmlns:xacro="http://www.ros.org/wiki/xacro">
+
+<xacro:include filename="$(find turntable_description)/urdf/materials.xacro" />
+<xacro:include filename="$(find turntable_description)/urdf/turntable.trans" />
+<xacro:include filename="$(find turntable_description)/urdf/turntable.gazebo" />
+<link name="base_link">
+  <inertial>
+    <origin rpy="0 0 0" xyz="-0.09561896601193492 -3.680289632786638e-17 -0.024277270491337637"/>
+    <mass value="4.191254406895512"/>
+    <inertia ixx="0.015043" ixy="-0.0" ixz="0.000114" iyy="0.053437" iyz="-0.0" izz="0.066455"/>
+  </inertial>
+  <visual>
+    <origin rpy="0 0 0" xyz="0 0 0"/>
+    <geometry>
+      <mesh filename="package://turntable_description/meshes/base_link.stl" scale="0.001 0.001 0.001"/>
+    </geometry>
+    <material name="silver"/>
+  </visual>
+  <collision>
+    <origin rpy="0 0 0" xyz="0 0 0"/>
+    <geometry>
+      <mesh filename="package://turntable_description/meshes/base_link.stl" scale="0.001 0.001 0.001"/>
+    </geometry>
+  </collision>
+</link>
+
+<link name="turntable_1">
+  <inertial>
+    <origin rpy="0 0 0" xyz="-0.0001369541078106031 -4.680626089289325e-05 0.011799929335338064"/>
+    <mass value="0.2394711948837742"/>
+    <inertia ixx="0.000852" ixy="1e-06" ixz="0.0" iyy="0.000849" iyz="0.0" izz="0.001688"/>
+  </inertial>
+  <visual>
+    <origin rpy="0 0 0" xyz="-0.0 -0.0 -0.0"/>
+    <geometry>
+      <mesh filename="package://turntable_description/meshes/turntable_1.stl" scale="0.001 0.001 0.001"/>
+    </geometry>
+    <material name="silver"/>
+  </visual>
+  <collision>
+    <origin rpy="0 0 0" xyz="-0.0 -0.0 -0.0"/>
+    <geometry>
+      <mesh filename="package://turntable_description/meshes/turntable_1.stl" scale="0.001 0.001 0.001"/>
+    </geometry>
+  </collision>
+</link>
+
+<joint name="Rev2" type="continuous">
+  <origin rpy="0 0 0" xyz="0.0 0.0 0.0"/>
+  <parent link="base_link"/>
+  <child link="turntable_1"/>
+  <axis xyz="0.0 0.0 -1.0"/>
+</joint>
+
+</robot>

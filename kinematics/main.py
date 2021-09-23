@@ -83,10 +83,36 @@ if __name__ == '__main__':
     S4 = np.block([np.array([0, 0, 0]), v4])
     Screws = np.array([S1, S2, S3, S4])
 
-    # Calculate an example inverse kinematics
+    """ Below is an example of forward kinematics for the robot arm.
+    # Calculate an example forward kinematics
     thetas[2] =  np.pi
-
     T_calc = mr.FKinSpace(M, Screws.T, thetas[1:])
-    print(M)
-    print(T_calc)
-    
+    """
+
+    # Space Jacobian just as an example
+    Js = mr.JacobianSpace(Screws.T, thetas[1:])
+
+    # Inverse Kinematics for a point and orientation
+    orientation = rot(np.array([0, 0, 1]), np.pi/2)
+    translation = np.array([[185, 0, 200]])
+
+    # TODO check with known results
+    """
+    # Calculate the inverse kinematics
+    # Desired configuration
+    T_des = np.concatenate((np.concatenate((orientation, translation.T), axis=1),
+                            np.array([[0, 0, 0, 1]])))
+
+    # Make an initial guess and specify the acceptable error
+    angleGuess = np.pi / 4
+    thetasInit = np.array([angleGuess, angleGuess, angleGuess, angleGuess])
+    errorOmega = 0.001
+    errorPosition = 0.001
+
+    thetasEnd, success = mr.IKinSpace(Screws.T, M, T_des, thetasInit, errorOmega, errorPosition)
+    T_calc = mr.FKinSpace(M, Screws.T, thetasEnd)
+    print("T_des = {}".format(T_des))
+    print("T_calc = {}".format(T_calc))
+    print("arm angles = {}".format(thetasEnd))
+    print("Did it work? {}".format(success))
+    """

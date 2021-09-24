@@ -20,6 +20,42 @@ def create_t(rotation=np.eye(3),
     T = np.concatenate((T, np.array([[0, 0, 0, 1]])), axis=0)
     return T
 
+# limit angles to between -pi < theta pi
+def limitAngles(angles):
+
+    for i, theta in zip(range(np.size(angles)), angles):
+        newAngle = 0
+        # The following logic is used to correct for pythons modulo
+        # operator only returning a number of the same sign as the divisor AND
+        # to ensure that the angles don't exceed 180 degs in either direction
+        if (theta > 0):
+            newAngle = np.mod(theta, 2 * np.pi)
+
+            if newAngle > np.pi:
+                newAngle = newAngle - 2 * np.pi
+
+        elif (theta < 0):
+            newAngle = np.mod(theta, -2 * np.pi)
+
+            if newAngle < -np.pi:
+                newAngle = newAngle + 2 * np.pi
+
+        angles[i] = newAngle
+    return angles
+
+# Theta 2 can only go between 0 and -pi radians
+def allowableAngles(angles):
+    if angles[1] > 0 or angles[1] <= -np.pi:
+        print("you're fucked")
+    print(angles[1])
+
+# change angles to degrees
+def toDegrees(angles):
+    for i, theta in zip(range(np.size(angles)), angles):
+        angles[i] = (theta / (np.pi)) * 180
+
+    return angles
+
 """
 This script primarily focuses on the transformations, kinematics and inverse
 kinematics of the robot arm for METR4202. The following robot has the following
@@ -92,27 +128,33 @@ if __name__ == '__main__':
     # Space Jacobian just as an example
     Js = mr.JacobianSpace(Screws.T, thetas[1:])
 
-    # Inverse Kinematics for a point and orientation
-    orientation = rot(np.array([0, 0, 1]), np.pi/2)
-    translation = np.array([[185, 0, 200]])
-
     # TODO check with known results
     """
+    # Inverse Kinematics for a point and orientation
+    #orientation = rot(np.array([0, 0, 1]), np.pi/2)
+    #orientation = rot(np.array([0, 0, 1]), )
+    #translation = np.array([[185, 0, 200]])
+    #translation = np.array([[0, 325, 114]])
+
     # Calculate the inverse kinematics
     # Desired configuration
     T_des = np.concatenate((np.concatenate((orientation, translation.T), axis=1),
                             np.array([[0, 0, 0, 1]])))
 
     # Make an initial guess and specify the acceptable error
-    angleGuess = np.pi / 4
+    angleGuess = -np.pi / 2
     thetasInit = np.array([angleGuess, angleGuess, angleGuess, angleGuess])
     errorOmega = 0.001
     errorPosition = 0.001
 
     thetasEnd, success = mr.IKinSpace(Screws.T, M, T_des, thetasInit, errorOmega, errorPosition)
+    thetasEnd = limitAngles(thetasEnd)
     T_calc = mr.FKinSpace(M, Screws.T, thetasEnd)
+
+    print("M = {}".format(M))
     print("T_des = {}".format(T_des))
     print("T_calc = {}".format(T_calc))
-    print("arm angles = {}".format(thetasEnd))
+    print("arm angles = {}".format(toDegrees(thetasEnd)))
     print("Did it work? {}".format(success))
+    #allowableAngles(thetasEnd)
     """

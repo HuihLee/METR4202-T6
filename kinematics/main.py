@@ -56,6 +56,118 @@ def toDegrees(angles):
 
     return angles
 
+def testKinematics(M, Screws, thetas,):
+    """ Below are examples of forward kinematics for the robot arm."""
+    # Calculate an example forward kinematics
+    T_calc = mr.FKinSpace(M, Screws.T, thetas[1:])
+    print("thetas = {}".format(thetas))
+    print("T_calc = {}".format(T_calc))
+
+    # Rotate the orientation joint
+    thetas[3] =  np.pi/2
+    T_calc = mr.FKinSpace(M, Screws.T, thetas[1:])
+    print("thetas = {}".format(thetas))
+    print("T_calc = {}".format(T_calc))
+
+    # Rotate arm B and correct for orientation with joint 3
+    thetas[3] = np.pi/2
+    thetas[2] =  -1 * np.pi/2
+    T_calc = mr.FKinSpace(M, Screws.T, thetas[1:])
+    print("thetas = {}".format(thetas))
+    print("T_calc = {}".format(T_calc))
+
+    # Rotate arm A and correct for orientation with joint 3
+    thetas[3] = -np.pi/2
+    thetas[2] =  -1 * np.pi/2
+    thetas[1] = np.pi
+    T_calc = mr.FKinSpace(M, Screws.T, thetas[1:])
+    print("thetas = {}".format(thetas))
+    print("T_calc = {}".format(T_calc))
+
+    # Rotate arm A and correct for orientation with joint 3
+    thetas = np.array([0., 0., 0., 0., 0.])
+    thetas[4] = -114
+    T_calc = mr.FKinSpace(M, Screws.T, thetas[1:])
+    print("thetas = {}".format(thetas))
+    print("T_calc = {}".format(T_calc))
+
+def testInverseKinematics(M, Screws):
+
+    # Inverse Kinematics for a point and orientation
+    orientation = rot(np.array([0, 0, 1]), 0)
+    translation = np.array([[0, 325, 114]])
+
+    # Calculate the inverse kinematics
+    # Desired configuration
+    T_des = np.concatenate((np.concatenate((orientation, translation.T), axis=1),
+                            np.array([[0, 0, 0, 1]])))
+
+    # Make an initial guess and specify the acceptable error
+    angleGuess = -np.pi / 2
+    thetasInit = np.array([angleGuess, angleGuess, angleGuess, angleGuess])
+    errorOmega = 0.001
+    errorPosition = 0.001
+
+    thetasEnd, success = mr.IKinSpace(Screws.T, M, T_des, thetasInit, errorOmega, errorPosition)
+    thetasEnd = limitAngles(thetasEnd)
+    T_calc = mr.FKinSpace(M, Screws.T, thetasEnd)
+
+    print("Starting Point M = {}".format(M))
+    print("T_des = {}".format(T_des))
+    print("T_calc = {}".format(T_calc))
+    print("Did it work? {}".format(success))
+    print("arm angles = {}".format(toDegrees(thetasEnd)))
+
+    # Inverse Kinematics for a point and orientation
+    orientation = rot(np.array([0, 0, 1]), np.pi/2)
+    translation = np.array([[0, 325, 114]])
+
+    # Desired configuration
+    T_des = np.concatenate((np.concatenate((orientation, translation.T), axis=1),
+                            np.array([[0, 0, 0, 1]])))
+
+    # Make an initial guess and specify the acceptable error
+    angleGuess = -np.pi / 2
+    thetasInit = np.array([angleGuess, angleGuess, angleGuess, angleGuess])
+    errorOmega = 0.001
+    errorPosition = 0.001
+
+    thetasEnd, success = mr.IKinSpace(Screws.T, M, T_des, thetasInit, errorOmega, errorPosition)
+    thetasEnd = limitAngles(thetasEnd)
+    T_calc = mr.FKinSpace(M, Screws.T, thetasEnd)
+    #allowableAngles(thetasEnd)
+
+    print("Starting Point M = {}".format(M))
+    print("T_des = {}".format(T_des))
+    print("T_calc = {}".format(T_calc))
+    print("Did it work? {}".format(success))
+    print("arm angles = {}".format(toDegrees(thetasEnd)))
+
+    # Inverse Kinematics for a point and orientation
+    orientation = rot(np.array([0, 0, 1]), 0)
+    translation = np.array([[-140, -185, 0]])
+
+    # Desired configuration
+    T_des = np.concatenate((np.concatenate((orientation, translation.T), axis=1),
+                            np.array([[0, 0, 0, 1]])))
+
+    # Make an initial guess and specify the acceptable error
+    angleGuess = -np.pi / 2
+    thetasInit = np.array([angleGuess, angleGuess, angleGuess, angleGuess])
+    errorOmega = 0.001
+    errorPosition = 0.001
+
+    thetasEnd, success = mr.IKinSpace(Screws.T, M, T_des, thetasInit, errorOmega, errorPosition)
+    thetasEnd = limitAngles(thetasEnd)
+    T_calc = mr.FKinSpace(M, Screws.T, thetasEnd)
+    # allowableAngles(thetasEnd)
+
+    print("Starting Point M = {}".format(M))
+    print("T_des = {}".format(T_des))
+    print("T_calc = {}".format(T_calc))
+    print("Did it work? {}".format(success))
+    print("arm angles = {}".format(toDegrees(thetasEnd)))
+
 """
 This script primarily focuses on the transformations, kinematics and inverse
 kinematics of the robot arm for METR4202. The following robot has the following
@@ -79,6 +191,7 @@ if __name__ == '__main__':
     y3 = 140 # mm length of armB
     z4 = 100 # mm height of claw
     r_6  = np.array([10, 10, 100]) # mm position of camera relative to frame{1}
+    PITCH = 1 # For the vertical axis, joint 4
 
     """ Create the initial transformation and screws for all joint frames """
     T0_1, T0_2, T1_2, T2_3, T3_4, T6_5, T1_6 = np.zeros((7, 4, 4))
@@ -110,7 +223,7 @@ if __name__ == '__main__':
     v1 = np.dot(-1 * wz_skew, q1)
     v2 = np.dot(-1 * wz_skew, q2)
     v3 = np.dot(-1 * wz_skew, q3)
-    v4 = np.array([0, 0, 1]) # translation along z axis
+    v4 = np.array([0, 0, PITCH]) # translation along z axis
 
     # Screws of each joint
     S1 = np.block([np.array([0, 0, 1]), v1])
@@ -119,42 +232,12 @@ if __name__ == '__main__':
     S4 = np.block([np.array([0, 0, 0]), v4])
     Screws = np.array([S1, S2, S3, S4])
 
-    """ Below is an example of forward kinematics for the robot arm.
-    # Calculate an example forward kinematics
-    thetas[2] =  np.pi
-    T_calc = mr.FKinSpace(M, Screws.T, thetas[1:])
-    """
+    # Test Kinematics
+    #testKinematics(M, Screws, thetas)
 
     # Space Jacobian just as an example
     Js = mr.JacobianSpace(Screws.T, thetas[1:])
 
-    # TODO check with known results
-    """
-    # Inverse Kinematics for a point and orientation
-    #orientation = rot(np.array([0, 0, 1]), np.pi/2)
-    #orientation = rot(np.array([0, 0, 1]), )
-    #translation = np.array([[185, 0, 200]])
-    #translation = np.array([[0, 325, 114]])
+    # Test Inverse Kinematics
+    #testInverseKinematics(M, Screws)
 
-    # Calculate the inverse kinematics
-    # Desired configuration
-    T_des = np.concatenate((np.concatenate((orientation, translation.T), axis=1),
-                            np.array([[0, 0, 0, 1]])))
-
-    # Make an initial guess and specify the acceptable error
-    angleGuess = -np.pi / 2
-    thetasInit = np.array([angleGuess, angleGuess, angleGuess, angleGuess])
-    errorOmega = 0.001
-    errorPosition = 0.001
-
-    thetasEnd, success = mr.IKinSpace(Screws.T, M, T_des, thetasInit, errorOmega, errorPosition)
-    thetasEnd = limitAngles(thetasEnd)
-    T_calc = mr.FKinSpace(M, Screws.T, thetasEnd)
-
-    print("M = {}".format(M))
-    print("T_des = {}".format(T_des))
-    print("T_calc = {}".format(T_calc))
-    print("arm angles = {}".format(toDegrees(thetasEnd)))
-    print("Did it work? {}".format(success))
-    #allowableAngles(thetasEnd)
-    """

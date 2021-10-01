@@ -1,0 +1,8 @@
+prefix=/home/metr4202/METR4202-T6/servo_ws/catkin_ws/devel
+
+Name: team-06
+Description: Description of team-06
+Version: 0.0.0
+Cflags: 
+Libs: -L${prefix}/lib 
+Requires: 

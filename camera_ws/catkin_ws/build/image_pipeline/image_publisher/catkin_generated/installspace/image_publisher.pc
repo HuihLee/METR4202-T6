@@ -1,0 +1,8 @@
+prefix=/home/michael/METR4202-T6/camera_ws/catkin_ws/install
+
+Name: image_publisher
+Description: Description of image_publisher
+Version: 1.15.3
+Cflags: -I${prefix}/include
+Libs: -L${prefix}/lib 
+Requires: 

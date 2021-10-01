@@ -1,0 +1,8 @@
+prefix=/home/michael/METR4202-T6/camera_ws/catkin_ws/devel
+
+Name: image_view
+Description: Description of image_view
+Version: 1.15.3
+Cflags: -I/home/michael/METR4202-T6/camera_ws/catkin_ws/devel/include
+Libs: -L${prefix}/lib 
+Requires: dynamic_reconfigure

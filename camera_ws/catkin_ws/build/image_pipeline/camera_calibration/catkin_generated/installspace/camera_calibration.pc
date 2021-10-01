@@ -1,0 +1,8 @@
+prefix=/home/michael/METR4202-T6/camera_ws/catkin_ws/install
+
+Name: camera_calibration
+Description: Description of camera_calibration
+Version: 1.15.3
+Cflags: 
+Libs: -L${prefix}/lib 
+Requires: 

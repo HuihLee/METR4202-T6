@@ -1,0 +1,2 @@
+DynamixelSDK/ros/dynamixel_sdk:DynamixelSDK/ros/dynamixel_sdk_examples:dynamixel_interface:team-06
+-DCATKIN_DEVEL_PREFIX=/home/metr4202/METR4202-T6/servo_ws/catkin_ws/devel -DCMAKE_INSTALL_PREFIX=/home/metr4202/METR4202-T6/servo_ws/catkin_ws/install -G Unix Makefiles

@@ -77,16 +77,16 @@ def testKinematics(M, Screws, thetas,):
     print("T_calc = {}".format(T_calc))
 
     # Rotate arm B and correct for orientation with joint 3
-    thetas[3] = np.pi/2
-    thetas[2] =  -1 * np.pi/2
+    thetas[2] = -np.pi / 2
+    thetas[3] = -np.pi/2
     T_calc = mr.FKinSpace(M, Screws.T, thetas[1:])
     print("thetas = {}".format(thetas))
     print("T_calc = {}".format(T_calc))
 
     # Rotate arm A and correct for orientation with joint 3
-    thetas[3] = -np.pi/2
-    thetas[2] =  -1 * np.pi/2
     thetas[1] = np.pi
+    thetas[2] = 0
+    thetas[3] = -np.pi
     T_calc = mr.FKinSpace(M, Screws.T, thetas[1:])
     print("thetas = {}".format(thetas))
     print("T_calc = {}".format(T_calc))
@@ -102,7 +102,7 @@ def testInverseKinematics(M, Screws):
 
     # Inverse Kinematics for a point and orientation
     orientation = rot(np.array([0, 0, 1]), 0)
-    translation = np.array([[0, 325, 114]])
+    translation = np.array([[0, 325, 26.14]])
 
     # Calculate the inverse kinematics
     # Desired configuration
@@ -116,35 +116,8 @@ def testInverseKinematics(M, Screws):
     errorPosition = 0.001
 
     thetasEnd, success = mr.IKinSpace(Screws.T, M, T_des, thetasInit, errorOmega, errorPosition)
-    thetasEnd = limitAngles(thetasEnd)
     T_calc = mr.FKinSpace(M, Screws.T, thetasEnd)
 
-    print("Starting Point M = {}".format(M))
-    print("T_des = {}".format(T_des))
-    print("T_calc = {}".format(T_calc))
-    print("Did it work? {}".format(success))
-    print("arm angles = {}".format(toDegrees(thetasEnd)))
-
-    # Inverse Kinematics for a point and orientation
-    orientation = rot(np.array([0, 0, 1]), np.pi/2)
-    translation = np.array([[0, 325, 114]])
-
-    # Desired configuration
-    T_des = np.concatenate((np.concatenate((orientation, translation.T), axis=1),
-                            np.array([[0, 0, 0, 1]])))
-
-    # Make an initial guess and specify the acceptable error
-    angleGuess = -np.pi / 2
-    thetasInit = np.array([angleGuess, angleGuess, angleGuess, angleGuess])
-    errorOmega = 0.001
-    errorPosition = 0.001
-
-    thetasEnd, success = mr.IKinSpace(Screws.T, M, T_des, thetasInit, errorOmega, errorPosition)
-    thetasEnd = limitAngles(thetasEnd)
-    T_calc = mr.FKinSpace(M, Screws.T, thetasEnd)
-    #allowableAngles(thetasEnd)
-
-    print("Starting Point M = {}".format(M))
     print("T_des = {}".format(T_des))
     print("T_calc = {}".format(T_calc))
     print("Did it work? {}".format(success))
@@ -152,7 +125,7 @@ def testInverseKinematics(M, Screws):
 
     # Inverse Kinematics for a point and orientation
     orientation = rot(np.array([0, 0, 1]), 0)
-    translation = np.array([[-140, -185, 0]])
+    translation = np.array([[325, 0, 26.14]])
 
     # Desired configuration
     T_des = np.concatenate((np.concatenate((orientation, translation.T), axis=1),
@@ -165,15 +138,125 @@ def testInverseKinematics(M, Screws):
     errorPosition = 0.001
 
     thetasEnd, success = mr.IKinSpace(Screws.T, M, T_des, thetasInit, errorOmega, errorPosition)
-    thetasEnd = limitAngles(thetasEnd)
     T_calc = mr.FKinSpace(M, Screws.T, thetasEnd)
-    # allowableAngles(thetasEnd)
 
-    print("Starting Point M = {}".format(M))
+    #print("Starting Point M = {}".format(M))
     print("T_des = {}".format(T_des))
     print("T_calc = {}".format(T_calc))
     print("Did it work? {}".format(success))
     print("arm angles = {}".format(toDegrees(thetasEnd)))
+
+    # Inverse Kinematics for a point and orientation
+    orientation = rot(np.array([0, 0, 1]), 0)
+    translation = np.array([[-140, -185, 26.14]])
+
+    # Desired configuration
+    T_des = np.concatenate((np.concatenate((orientation, translation.T), axis=1),
+                            np.array([[0, 0, 0, 1]])))
+
+    # Make an initial guess and specify the acceptable error
+    angleGuess = -np.pi / 2
+    thetasInit = np.array([angleGuess, angleGuess, angleGuess, angleGuess])
+    errorOmega = 0.001
+    errorPosition = 0.001
+
+    thetasEnd, success = mr.IKinSpace(Screws.T, M, T_des, thetasInit, errorOmega, errorPosition)
+    T_calc = mr.FKinSpace(M, Screws.T, thetasEnd)
+
+    print("T_des = {}".format(T_des))
+    print("T_calc = {}".format(T_calc))
+    print("Did it work? {}".format(success))
+    print("arm angles = {}".format(toDegrees(thetasEnd)))
+
+    # Inverse Kinematics for a point and orientation
+    orientation = rot(np.array([0, 0, 1]), np.pi/2)
+    translation = np.array([[-125, -299.9, 100]])
+
+    # Desired configuration
+    T_des = np.concatenate((np.concatenate((orientation, translation.T), axis=1),
+                            np.array([[0, 0, 0, 1]])))
+
+    # Make an initial guess and specify the acceptable error
+    angleGuess = -np.pi / 2
+    thetasInit = np.array([angleGuess, angleGuess, angleGuess, angleGuess])
+    errorOmega = 0.001
+    errorPosition = 0.001
+
+    thetasEnd, success = mr.IKinSpace(Screws.T, M, T_des, thetasInit, errorOmega, errorPosition)
+    T_calc = mr.FKinSpace(M, Screws.T, thetasEnd)
+
+    print("T_des = {}".format(T_des))
+    print("T_calc = {}".format(T_calc))
+    print("Did it work? {}".format(success))
+    print("arm angles = {}".format(toDegrees(thetasEnd)))
+
+def compareCubeHome(M, Screws, cubeHomeAngles):
+    """ Cube home angles have been manually calculated using CAD"""
+    # RED position
+    cubeHomeAngles[Colour.RED.value][0] = np.array([-6.91 * np.pi/180,
+                                              -(180 - 43.5) * np.pi/180,
+                                              0, 0])
+    cubeHomeAngles[Colour.RED.value][1] = np.array([11.94 * np.pi/180,
+                                              -(180 - 51.03) * np.pi/180,
+                                              0, 0])
+    cubeHomeAngles[Colour.RED.value][2] = np.array([-0.37 * np.pi/180,
+                                              -(180 - 70.17) * np.pi/180,
+                                              0, 0])
+    cubeHomeAngles[Colour.RED.value][3] = np.array([-13.37 * np.pi/180,
+                                              -(180 - 64.16) * np.pi/180,
+                                              0, 0])
+    # GREEN positions
+    cubeHomeAngles[Colour.GREEN.value][0] = np.array([-60.47 * np.pi/180,
+                                              -136.5 * np.pi/180,
+                                              0, 0])
+    cubeHomeAngles[Colour.GREEN.value][1] = np.array([-60 * np.pi/180,
+                                              -116.3 * np.pi/180,
+                                              0, 0])
+    cubeHomeAngles[Colour.GREEN.value][2] = np.array([-43.23 * np.pi/180,
+                                              -109.83 * np.pi/180,
+                                              0, 0])
+    cubeHomeAngles[Colour.GREEN.value][3] = np.array([-40.01 * np.pi/180,
+                                              -128.97 * np.pi/180,
+                                              0, 0])
+    # BLUE positions
+    cubeHomeAngles[Colour.BLUE.value][0] = np.array([-101.94 * np.pi/180,
+                                              -128.97 * np.pi/180,
+                                              0, 0])
+    cubeHomeAngles[Colour.BLUE.value][1] = np.array([-89.63 * np.pi/180,
+                                              -109.83 * np.pi/180,
+                                              0, 0])
+    cubeHomeAngles[Colour.BLUE.value][2] = np.array([-76.26 * np.pi/180,
+                                              -115.84 * np.pi/180,
+                                              0, 0])
+    cubeHomeAngles[Colour.BLUE.value][3] = np.array([-83.09 * np.pi/180,
+                                              -136.5 * np.pi/180,
+                                              0, 0])
+    # PURPLE positions
+    cubeHomeAngles[Colour.PURPLE.value][0] = np.array([-150 * np.pi/180,
+                                              -115.84 * np.pi/180,
+                                              0, 0])
+    cubeHomeAngles[Colour.PURPLE.value][1] = np.array([-133.23 * np.pi/180,
+                                              -109.83 * np.pi/180,
+                                              0, 0])
+    cubeHomeAngles[Colour.PURPLE.value][2] = np.array([-130.01 * np.pi/180,
+                                              -128.97 * np.pi/180,
+                                              0, 0])
+    cubeHomeAngles[Colour.PURPLE.value][3] = np.array([-150.47 * np.pi/180,
+                                              -136.5 * np.pi/180,
+                                              0, 0])
+
+    colours = [Colour.RED, Colour.GREEN, Colour.BLUE, Colour.PURPLE]
+
+    for colour in colours:
+        print("{}".format(colour))
+        for angle in cubeHomeAngles[colour.value]:
+            T_des = mr.FKinSpace(M, Screws.T, angle)
+            print(f"T_des = \n{T_des}")
+            a, success = (mr.IKinSpace(Screws.T, M, T_des, angle, 0.01, 0.1))
+            print(f"T_found = \n{mr.FKinSpace(M, Screws.T, a)}")
+            print("\tManually found position \t{}".format(toDegrees(angle)))
+            print("\tNR method position ({}) \t{}".format(success,toDegrees(a)))
+    print("")
 
 def initialiseCubeAngles(cubeHomeAngles):
     cubeHeight = 16 # mm
@@ -197,47 +280,132 @@ def initialiseCubeAngles(cubeHomeAngles):
     ])
 
     # Inverse Kinematics for a point and orientation
-    orientation = rot(np.array([0, 0, 1]), 0)
+    orientation = rot(np.array([0, 0, 0]), 0)
     colour = 0
-    colours = 4
-    while colour < colours:
+    colours = [Colour.RED, Colour.GREEN, Colour.BLUE, Colour.PURPLE]
+    for colour in colours:
         position = 0
         positions = 4
+        print(colours[colour.value])
+
         while position < positions:
-            translation = np.array([[cubePositions[colour][position][0],
-                                     cubePositions[colour][position][1],
-                                     cubePositions[colour][position][2]]])
+            translation = np.array([[cubePositions[colour.value][position][0],
+                                     cubePositions[colour.value][position][1],
+                                     cubePositions[colour.value][position][2]]])
 
             # Desired configuration
             T_des = np.concatenate((np.concatenate((orientation, translation.T), axis=1),
                                     np.array([[0, 0, 0, 1]])))
 
             # Make an initial guess and specify the acceptable error
-            if colour == 0 or colour == 1:
-                thetasInit = np.array([np.pi * 9.0 / 10, -np.pi * 2 / 3, 0, 0])
-            else:
-                thetasInit = np.array([-np.pi * 9.0 / 10, -np.pi * 2 / 3, 0, 0])
+            thetasInit = np.array([0, 0, 0, 0])
 
-            errorOmega = 0.001
-            errorPosition = 0.001
+            if colour == Colour.RED:
+                thetasInit = np.array([-6.91 * np.pi/180, -(180 - 43.5) * np.pi/180, 0, 0])
+            elif colour == Colour.GREEN:
+                thetasInit = np.array([(-60.47) * np.pi/180, -136.5 * np.pi/180, 0, 0])
+            elif colour == Colour.BLUE:
+                thetasInit = np.array([(-101.94) * np.pi/180, (-128.97) * np.pi/180, 0, 0])
+            elif colour == Colour.PURPLE:
+                thetasInit = np.array([(-150) * np.pi/180, (-115.84) * np.pi/180, 0, 0])
+
+            errorOmega = 0.01
+            errorPosition = 0.1
 
             thetasEnd, success = mr.IKinSpace(Screws.T, M, T_des, thetasInit, errorOmega, errorPosition)
-            #thetasEnd = limitAngles(thetasEnd)
             T_calc = mr.FKinSpace(M, Screws.T, thetasEnd)
-            print(success)
 
-            cubeHomeAngles[colour][position] = thetasEnd
+            cubeHomeAngles[colour.value][position] = thetasEnd
             position = position + 1
-            """
-            print("Starting Point M = {}".format(M))
-            print("T_des = {}".format(T_des))
-            print("T_calc = {}".format(T_calc))
-            print("Did it work? {}".format(success))
-            print("arm angles = {}".format(toDegrees(thetasEnd)))
-            """
-        colour = colour + 1
+
+
+            #print("Starting Point M = {}".format(M))
+            print(f"Initial Guess {toDegrees(thetasInit)}")
+            print(f"T_des = \n{T_des}")
+            print(f"Did it work? {success}")
+            print(f"arm angles = {toDegrees(thetasEnd)}\n")
+            print(f"T_calc = \n{T_calc}")
+
+
+        print(" ---- ")
 
     return cubeHomeAngles
+def cubeHomeAnalytical(cubeHomeAngles):
+    cubeHeight = 16 # mm
+    cubePositions = np.array([
+        [[-125, -25, cubeHeight],
+         [-125, -75, cubeHeight],
+         [-175, -75, cubeHeight],
+         [-175, -25, cubeHeight]],
+        [[-25, -125, cubeHeight],
+         [-25, -175, cubeHeight],
+         [-75, -175, cubeHeight],
+         [-75, -125, cubeHeight]],
+        [[75, -125, cubeHeight],
+         [75, -175, cubeHeight],
+         [25, -175, cubeHeight],
+         [25, -125, cubeHeight]],
+        [[175, -25, cubeHeight],
+         [175, -75, cubeHeight],
+         [125, -75, cubeHeight],
+         [125, -25, cubeHeight]],
+    ])
+
+    colour = 0
+    colours = [Colour.RED, Colour.GREEN, Colour.BLUE, Colour.PURPLE]
+    for colour in colours:
+        position = 0
+        positions = 4
+        #print(colours[colour.value])
+
+        while position < positions:
+            theta1, theta2 = IKinAnalytical(cubePositions[colour.value][position][0:2], armA_l, armB_l)
+            thetasEnd = np.array([slewAngle(thetaHomeOffset, theta1), theta2, 0, 0])
+            cubeHomeAngles[colour.value][position] = thetasEnd
+            #print(f"position = {cubePositions[colour.value][position][0:2]}")
+            #print(f"arm angles = {toDegrees(thetasEnd)}\n")
+            position = position + 1
+
+        #print(" ---- ")
+
+    return cubeHomeAngles
+
+def cubeHomeTest(cubeHomeAngles):
+    colours = [Colour.RED, Colour.GREEN, Colour.BLUE, Colour.PURPLE]
+
+    for colour in colours:
+        print("{}".format(colour))
+        for angle in cubeHomeAngles[colour.value]:
+            T_des = mr.FKinSpace(M, Screws.T, angle)
+            print("\tAnalytically found position \t{}".format(toDegrees(angle)))
+            print(f"T_des =\n {T_des}")
+    print("")
+
+""" Using given x, y coordinates, the inverse kinematics are calculated analytically"""
+# todo : implement solution when x or y = 0
+def IKinAnalytical(xy, armA, armB):
+    c = np.sqrt(xy[0]**2 + xy[1]**2) # pythagoras theorem
+    gamma = np.arctan2(xy[1], xy[0])
+
+    cosC = (armA ** 2 + armB ** 2 - c ** 2) / (2 * armA * armB) # cosine rule
+    C = np.arccos(cosC)
+    theta2 = -1 * (np.pi - C) # rad
+
+    cosB = (c ** 2 + armA ** 2 - armB ** 2) / (2 * c * armA) # cosine rule
+    B = np.arccos(cosB)
+    theta1 = gamma + B # rad
+
+    return (theta1, theta2)
+
+""" Offset theta1 for the slew axis """
+def slewAngle(thetaHomeOffset, theta1):
+    newAngle = theta1 - thetaHomeOffset
+
+    if newAngle > np.pi:
+        newAngle = newAngle - 2 * np.pi
+    elif newAngle < -np.pi:
+        newAngle = newAngle + 2 * np.pi
+    return newAngle
 
 """
 This script primarily focuses on the transformations, kinematics and inverse
@@ -256,10 +424,13 @@ camera      | frame{6} S6 z6        | camera mounted on armA
 """
 
 if __name__ == '__main__':
+    np.set_printoptions(precision=2, suppress=True)
     """ Model parameters """
+    thetaHomeOffset = (157.33 + 90) * (np.pi / 180);  # rad - this is the home angle of the arm relative to the x axis
+    clawAngleOffset = -15 * (np.pi / 180) # rad - offset angle for claw relative to armB
     z1 = 114 # mm height of the slew joint from origin
-    y2 = 185 # mm length of armA
-    y3 = 140 # mm length of armB
+    armA_l = 185 # mm length of armA
+    armB_l = 140 # mm length of armB
     z4 = 26.14 # mm height of claw
     r_6  = np.array([29.104, 29.104, 285.589]) # mm position of camera relative to frame{0}
     PITCH = 1 # For the vertical axis, joint 4
@@ -268,25 +439,29 @@ if __name__ == '__main__':
     T0_1, T0_2, T1_2, T2_3, T3_4, T6_5, T1_6 = np.zeros((7, 4, 4))
 
     # Joint angles in radians. This includes a joint that does not exist in the first position
-    thetas = np.array([0., 0., 0., -1 * np.pi/4, 0.]) # thetas[0] is not a real joint. Used to so that index number is same as joint number.
+    thetas = np.array([0., 0., 0., 0., 0.]) # thetas[0] is not a real joint. Used to so that index number is same as joint number.
 
     # Relative transformation matrices
-    T0_1 = mr.RpToTrans(np.eye(3), np.array([0, 0, z1]))
-    T1_2 = mr.RpToTrans(np.eye(3), np.array([0, y2, 0]))
-    T2_3 = mr.RpToTrans(np.eye(3), np.array([0, y3, 0]))
-    R3 = rot(np.array([0, 0, 1]), thetas[3])
-    T3_4 = mr.RpToTrans(R3, np.array([0, 0, z4 - z1]))
+    R1 = rot(np.array([0, 0, 1]), thetas[1] + thetaHomeOffset)
+    T0_1 = mr.RpToTrans(R1, np.array([0, 0, z1])) # origin to armA joint
+    R2 = rot(np.array([0, 0, 1]), thetas[2])
+    T1_2 = mr.RpToTrans(R2, np.array([armA_l, 0, 0])) # armA joint to armB joint
+    R3 = rot(np.array([0, 0, 1]), thetas[3] + clawAngleOffset)
+    T2_3 = mr.RpToTrans(R3, np.array([armB_l, 0, 0])) # armB joint to claw orientation
+    R4 = rot(np.array([0, 0, 1]), 0)
+    T3_4 = mr.RpToTrans(R4, np.array([0, 0, (z4 - z1) + PITCH * thetas[4]]))
     R4 = R3
     T0_6 = mr.RpToTrans(R4, r_6) # Camera pose relative to frame {0}
 
     # End effector position relative to home
     M = T0_1 @ T1_2 @ T2_3 @ T3_4
+    #print(M)
 
     # Frame distance from origin
     q1 = np.array([0, 0, z1])
-    q2 = np.array([0, y2, z1])
-    q3 = np.array([0, y2 + y3, z1])
-    q4 = np.array([0, y2 + y3, z4])
+    q2 = np.array([armA_l * np.cos(thetaHomeOffset), armA_l * np.sin(thetaHomeOffset), z1])
+    q3 = np.array([(armA_l + armB_l) * np.cos(thetaHomeOffset), (armA_l + armB_l) * np.sin(thetaHomeOffset), z1])
+    q4 = np.array([(armA_l + armB_l) * np.cos(thetaHomeOffset), (armA_l + armB_l) * np.sin(thetaHomeOffset), z4])
 
     # Skew axis representation of rotation about z axis
     wz_skew = mr.VecToso3(np.array([0, 0, 1]))
@@ -313,9 +488,17 @@ if __name__ == '__main__':
     # Test Inverse Kinematics
     #testInverseKinematics(M, Screws)
 
+    """ Cube home positions have been calculated in CAD.
+    Compare the calculated angles with the forward kinematics """
+    #compareCubeHome(M, Screws, np.array(np.zeros((4, 4, 4))))
+
     """ Get angle values for the cube locations """
+    #cubeHomeAngles = np.array(np.zeros((4, 4, 4)))
+    #cubeHomeAngles = initialiseCubeAngles(cubeHomeAngles)
+
+    """ Get angle values for the cub locations """
     cubeHomeAngles = np.array(np.zeros((4, 4, 4)))
-    cubeHomeAngles = initialiseCubeAngles(cubeHomeAngles)
+    cubeHomeAngles = cubeHomeAnalytical(cubeHomeAngles)
+    #cubeHomeTest(cubeHomeAngles)
 
-    print(cubeHomeAngles)
-
+    

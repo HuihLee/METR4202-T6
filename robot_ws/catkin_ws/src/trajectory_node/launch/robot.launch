@@ -1,0 +1,11 @@
+<launch>
+    <!-- Launch trajectory planner modules -->
+    <node pkg = "trajectory_node" type = "robot_planner.py" name = "trajectory_controller"/>
+    <!-- Launch servo controller modules -->
+    <node pkg = "servo_node" type = "servo_control.py" name = "servo_controller"/>
+    <!-- Launch camera and aruco identification modules -->
+    <node pkg = "camera_node" type = "block_identification.py" name = "camera_controller"/>
+
+    <!-- Debugging node connections etc -->
+    <node pkg = "rqt_graph" type = "rqt_graph" name="display_node_comms"/>
+</launch>

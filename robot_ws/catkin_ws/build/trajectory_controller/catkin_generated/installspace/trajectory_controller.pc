@@ -1,0 +1,8 @@
+prefix=/home/michael/METR4202-T6/robot_ws/catkin_ws/install
+
+Name: trajectory_controller
+Description: Description of trajectory_controller
+Version: 0.0.0
+Cflags: 
+Libs: -L${prefix}/lib 
+Requires: 

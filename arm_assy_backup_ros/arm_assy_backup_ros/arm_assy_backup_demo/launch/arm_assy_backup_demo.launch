@@ -1,0 +1,7 @@
+<launch>
+    <node name="gazebo" pkg="gazebo_ros" type="gazebo"/>
+    <include file="$(find arm_assy_backup_gazebo)/launch/arm_assy_backup_gazebo.launch"/>
+    <include file="$(find arm_assy_backup_control)/launch/arm_assy_backup_control.launch"/>
+    <node name="arm_assy_backup_demo_node" pkg="arm_assy_backup_demo" type="arm_assy_backup_demo"/>
+
+</launch>

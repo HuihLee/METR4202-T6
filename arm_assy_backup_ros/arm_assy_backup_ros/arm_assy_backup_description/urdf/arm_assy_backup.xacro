@@ -1,0 +1,171 @@
+<?xml version="1.0" ?>
+<robot name="arm_assy_backup" xmlns:xacro="http://www.ros.org/wiki/xacro">
+
+<xacro:include filename="$(find arm_assy_backup_description)/urdf/materials.xacro" />
+<xacro:include filename="$(find arm_assy_backup_description)/urdf/arm_assy_backup.trans" />
+<xacro:include filename="$(find arm_assy_backup_description)/urdf/arm_assy_backup.gazebo" />
+<link name="base_link">
+  <inertial>
+    <origin rpy="0 0 0" xyz="-0.0009507287134129516 -2.103316465624298e-15 -0.017407384171893137"/>
+    <mass value="5.608695255633382"/>
+    <inertia ixx="0.044211" ixy="-0.0" ixz="-0.000213" iyy="0.072172" iyz="0.0" izz="0.103835"/>
+  </inertial>
+  <visual>
+    <origin rpy="0 0 0" xyz="0 0 0"/>
+    <geometry>
+      <mesh filename="package://arm_assy_backup_description/meshes/base_link.stl" scale="0.001 0.001 0.001"/>
+    </geometry>
+    <material name="silver"/>
+  </visual>
+  <collision>
+    <origin rpy="0 0 0" xyz="0 0 0"/>
+    <geometry>
+      <mesh filename="package://arm_assy_backup_description/meshes/base_link.stl" scale="0.001 0.001 0.001"/>
+    </geometry>
+  </collision>
+</link>
+
+<link name="armA_1">
+  <inertial>
+    <origin rpy="0 0 0" xyz="0.016036 0.000156 0.01673"/>
+    <mass value="0.647"/>
+    <inertia ixx="0.0010747" ixy="-0.00001386" ixz="-0.00045398" iyy="0.002177" iyz="-0.000005806" izz="0.0018872"/>
+  </inertial>
+  <visual>
+    <origin rpy="0 0 0" xyz="-0.0 -0.0 -0.118"/>
+    <geometry>
+      <mesh filename="package://arm_assy_backup_description/meshes/armA_1.stl" scale="0.001 0.001 0.001"/>
+    </geometry>
+    <material name="silver"/>
+  </visual>
+  <collision>
+    <origin rpy="0 0 0" xyz="-0.0 -0.0 -0.118"/>
+    <geometry>
+      <mesh filename="package://arm_assy_backup_description/meshes/armA_1.stl" scale="0.001 0.001 0.001"/>
+    </geometry>
+  </collision>
+</link>
+
+<link name="armB_1">
+  <inertial>
+    <origin rpy="0 0 0" xyz="0.095476 0.004053 -0.028703"/>
+    <mass value="0.273"/>
+    <inertia ixx="0.000592" ixy="0.000034987" ixz="0.000383933" iyy="0.001323383" iyz="-0.000038358" izz="0.000831039"/>
+  </inertial>
+  <visual>
+    <origin rpy="0 0 0" xyz="-0.117916 -0.142551 -0.2"/>
+    <geometry>
+      <mesh filename="package://arm_assy_backup_description/meshes/armB_1.stl" scale="0.001 0.001 0.001"/>
+    </geometry>
+    <material name="silver"/>
+  </visual>
+  <collision>
+    <origin rpy="0 0 0" xyz="-0.117916 -0.142551 -0.2"/>
+    <geometry>
+      <mesh filename="package://arm_assy_backup_description/meshes/armB_1.stl" scale="0.001 0.001 0.001"/>
+    </geometry>
+  </collision>
+</link>
+
+<link name="couple_1">
+  <inertial>
+    <origin rpy="0 0 0" xyz="0.0053766945444645164 -0.009849440277220685 -0.0008149189658958333"/>
+    <mass value="0.00839129633664824"/>
+    <inertia ixx="2e-06" ixy="0.0" ixz="-0.0" iyy="1e-06" iyz="0.0" izz="2e-06"/>
+  </inertial>
+  <visual>
+    <origin rpy="0 0 0" xyz="-0.172468 -0.013617 -0.158"/>
+    <geometry>
+      <mesh filename="package://arm_assy_backup_description/meshes/couple_1.stl" scale="0.001 0.001 0.001"/>
+    </geometry>
+    <material name="silver"/>
+  </visual>
+  <collision>
+    <origin rpy="0 0 0" xyz="-0.172468 -0.013617 -0.158"/>
+    <geometry>
+      <mesh filename="package://arm_assy_backup_description/meshes/couple_1.stl" scale="0.001 0.001 0.001"/>
+    </geometry>
+  </collision>
+</link>
+
+<link name="claw_1">
+  <inertial>
+    <origin rpy="0 0 0" xyz="-0.0016473444138072335 0.017910578349190548 -0.08634622471344726"/>
+    <mass value="0.040118536229387894"/>
+    <inertia ixx="3.2e-05" ixy="-3e-06" ixz="-3e-06" iyy="3.9e-05" iyz="5e-06" izz="1.8e-05"/>
+  </inertial>
+  <visual>
+    <origin rpy="0 0 0" xyz="-0.180058 0.010722 -0.172"/>
+    <geometry>
+      <mesh filename="package://arm_assy_backup_description/meshes/claw_1.stl" scale="0.001 0.001 0.001"/>
+    </geometry>
+    <material name="silver"/>
+  </visual>
+  <collision>
+    <origin rpy="0 0 0" xyz="-0.180058 0.010722 -0.172"/>
+    <geometry>
+      <mesh filename="package://arm_assy_backup_description/meshes/claw_1.stl" scale="0.001 0.001 0.001"/>
+    </geometry>
+  </collision>
+</link>
+
+<link name="carousel_1">
+  <inertial>
+    <origin rpy="0 0 0" xyz="0.00741399999999498 6.7750877101282055e-15 0.004937819420783649"/>
+    <mass value="0.23051436095715144"/>
+    <inertia ixx="0.00082" ixy="0.0" ixz="-0.0" iyy="0.00082" iyz="0.0" izz="0.001629"/>
+  </inertial>
+  <visual>
+    <origin rpy="0 0 0" xyz="-0.182586 0.0 -0.0"/>
+    <geometry>
+      <mesh filename="package://arm_assy_backup_description/meshes/carousel_1.stl" scale="0.001 0.001 0.001"/>
+    </geometry>
+    <material name="silver"/>
+  </visual>
+  <collision>
+    <origin rpy="0 0 0" xyz="-0.182586 0.0 -0.0"/>
+    <geometry>
+      <mesh filename="package://arm_assy_backup_description/meshes/carousel_1.stl" scale="0.001 0.001 0.001"/>
+    </geometry>
+  </collision>
+</link>
+
+<joint name="theta1" type="continuous">
+  <origin rpy="0 0 0" xyz="0.0 0.0 0.118"/>
+  <parent link="base_link"/>
+  <child link="armA_1"/>
+  <axis xyz="-0.0 0.0 1.0"/>
+</joint>
+
+<joint name="theta2" type="revolute">
+  <origin rpy="0 0 0" xyz="0.117916 0.142551 0.082"/>
+  <parent link="armA_1"/>
+  <child link="armB_1"/>
+  <axis xyz="0.0 -0.0 -1.0"/>
+  <limit effort="100" lower="-3.141593" upper="-0.523599" velocity="100"/>
+</joint>
+
+<joint name="theta3" type="revolute">
+  <origin rpy="0 0 0" xyz="0.054552 -0.128934 -0.042"/>
+  <parent link="armB_1"/>
+  <child link="couple_1"/>
+  <axis xyz="0.0 -0.0 -1.0"/>
+  <limit effort="100" lower="-1.308997" upper="1.832596" velocity="100"/>
+</joint>
+
+<joint name="theta4" type="prismatic">
+  <origin rpy="0 0 0" xyz="0.00759 -0.024339 0.014"/>
+  <parent link="couple_1"/>
+  <child link="claw_1"/>
+  <axis xyz="0.0 -0.0 -1.0"/>
+  <limit effort="100" lower="-0.037" upper="0.0" velocity="100"/>
+</joint>
+
+<joint name="thetaCarousel" type="continuous">
+  <origin rpy="0 0 0" xyz="0.182586 0.0 0.0"/>
+  <parent link="base_link"/>
+  <child link="carousel_1"/>
+  <axis xyz="0.0 -0.0 -1.0"/>
+</joint>
+
+</robot>

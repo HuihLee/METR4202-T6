@@ -1,0 +1,27 @@
+arm_assy_backup_controller:
+  # Publish all joint states -----------------------------------
+  joint_state_controller:
+    type: joint_state_controller/JointStateController
+    publish_rate: 50
+
+  # Position Controllers --------------------------------------
+  theta1_position_controller:
+    type: effort_controllers/JointPositionController
+    joint: theta1
+    pid: {p: 100.0, i: 0.01, d: 10.0}
+  theta2_position_controller:
+    type: effort_controllers/JointPositionController
+    joint: theta2
+    pid: {p: 100.0, i: 0.01, d: 10.0}
+  theta3_position_controller:
+    type: effort_controllers/JointPositionController
+    joint: theta3
+    pid: {p: 100.0, i: 0.01, d: 10.0}
+  theta4_position_controller:
+    type: effort_controllers/JointPositionController
+    joint: theta4
+    pid: {p: 100.0, i: 0.01, d: 10.0}
+  thetaCarousel_position_controller:
+    type: effort_controllers/JointPositionController
+    joint: thetaCarousel
+    pid: {p: 100.0, i: 0.01, d: 10.0}

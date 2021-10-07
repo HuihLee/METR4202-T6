@@ -1,4 +1,5 @@
-Gazebo and Rviz Simulation <br/>
+Packages including: joint controller etc. <br/>
+Gazebo and Rviz Simulation <br/> *mission abort 
 Working: <br/>
 Rviz and joint state publisher gui <br/>
 Gazebo model<br/>

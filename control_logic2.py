@@ -1,27 +1,27 @@
 from enum import Enum
 import numpy as np
-    #----
-    """ Camera logic """
-    # WAIT
-    # BAGGAGE_CAROUSEL_STOPPED
-    # GET_CUBE - determine the cube with the smallest x value (transform the pose)
-    # PUBLISH_CUBE_POSE - and colour
+# ----
+""" Camera logic """
+# WAIT
+# BAGGAGE_CAROUSEL_STOPPED
+# GET_CUBE - determine the cube with the smallest x value (transform the pose)
+# PUBLISH_CUBE_POSE - and colour
 
-    #----
-    """ Trajectory logic """
-    # WAIT
-    # RECEIVE_JS_AND_TIME
-    # CALCULATE_TRAJECTORY
-    # PUBLISH_JS
-    #   for theta_i publish JS
-    # SEND_TRAJECTORY_COMPLETE
+# ----
+""" Trajectory logic """
+# WAIT
+# RECEIVE_JS_AND_TIME
+# CALCULATE_TRAJECTORY
+# PUBLISH_JS
+#   for theta_i publish JS
+# SEND_TRAJECTORY_COMPLETE
 
-    #----
-    """ Inverse Kinematics logic """
-    # WAIT
-    # RECEIVE_POSITION
-    # CALCULATE_JS
-    # PUBLISH_JS
+# ----
+""" Inverse Kinematics logic """
+# WAIT
+# RECEIVE_POSITION
+# CALCULATE_JS
+# PUBLISH_JS
 
 class ControlState(Enum):
     ERROR = 0
@@ -36,6 +36,7 @@ class ControlState(Enum):
     CLAW_DROP = 9
     UP_DROP = 10
 
+
 class ControlLogic:
     # Attributes here
 
@@ -46,11 +47,46 @@ class ControlLogic:
 
     # cubePose = ([x, y, z, theta_z])
     cubePose = np.array([0, 0, 0, 0])
+    currentJS = np.array([0, 0, 0, 0, 0])
+    trajectoryComplete = Bool()
+    trajectoryComplete = False
+    targetJSReceived = Bool()
+    targetJSReceived = False
 
     def __init__(self):
-        # Get cube home positions
-        # Setup subs and pubs
-        # Calibrate arm
+
+        self.pub = rospy.Publisher('joint_states', JointState, queue_size=10)
+        self.sub = rospy.Subscriber('des_pose', Pose, self.cb_sub)
+
+
+    # Get cube home positions
+    # Setup subs and pubs
+    # Calibrate arm
+
+    def cb_cubePose(self, msg):
+        self.cubePose = np.array([msg.position[0],
+                                  msg.position[1],
+                                  msg.position[2],
+                                  msg.position[3]])
+        self.cubeFound = True
+
+    def cb_current_js(self, msg):
+        self.currentJS = np.array([msg.position[0],
+                                   msg.position[1],
+                                   msg.position[2],
+                                   msg.position[3],
+                                   msg.position[4]])
+
+    def cb_trajectory_complete(self, msg):
+        self.trajectoryComplete = True
+
+    def cb_target_js(self, msg):
+        self.currentJS = np.array([msg.position[0],
+                                   msg.position[1],
+                                   msg.position[2],
+                                   msg.position[3],
+                                   msg.position[4]])
+        self.targetJSReceived = True
 
     def control_loop(self):
         ibisState = self.ibisState
@@ -72,7 +108,7 @@ class ControlLogic:
                 """ request IK """
                 if targetJSReceived is True:
                     ibisState = ControlState.MOVE_OVER_CUBE
-                    #publish jointstate to trajectory
+                    # publish jointstate to trajectory
                     trajectoryComplete = False
             case MOVE_OVER_CUBE:
                 if trajectoryComplete is True:
@@ -118,5 +154,4 @@ class ControlLogic:
 
 
 if __name__ == '__main__':
-    # Initialise variables
-
+# Initialise variables

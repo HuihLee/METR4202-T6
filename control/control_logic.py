@@ -219,6 +219,7 @@ class ControlLogic:
                 if cubeFound is True:
                     """ Receive cube pose from the camera """
                     ibisState = ControlState.CALCULATE_IK
+                    cubeFound = False
             case CALCULATE_IK:
                 calculate_JS()
                 if targetJSReceived is True:

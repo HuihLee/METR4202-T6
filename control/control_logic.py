@@ -1,25 +1,32 @@
 from enum import Enum
 import numpy as np
+"""
 import rospy
-from colour.py import Colour
+from Colour.py import Colour
+"""
+"""
 from std_msgs.msg import Float64
 from std_msgs.msg import Bool
 from std_msgs.msg import Header
 from geometry_msgs.msg import Pose
 from sensor_msgs.msg import JointState
-
+"""
+"""
 # importing sys to import files from different folders
 import sys
 sys.path.insert(0, '') #hierarchy -> '/home/user/folders'
 sys.path.insert(0, '')
 sys.path.insert(0, '')
 sys.path.insert(0, '')
-  
-# import all py files from different packages  
+"""
+
+# import all py files from different packages
+"""
 from import * 
 from import *
 from import *
 from import *
+"""
 
 # ----
 """ Camera logic """
@@ -59,18 +66,16 @@ class ControlState(Enum):
     UP_DROP = 10 # Arm moving up from drop off
     ZERO = 11 # All angles at home positions
 
-"""
 class Colour(Enum):
-    UNKNOWN = 0
-    RED = 1
-    GREEN = 2
-    BLUE = 3
-    YELLOW = 4
-"""
+    RED = 0
+    GREEN = 1
+    BLUE = 2
+    YELLOW = 3
+    UNKNOWN = 4
 
 class ControlLogic:
     """ Attributes here """
-    ibisState = ControlState.SEARCHING
+    ibisState = ControlState.SEARCHING # State of the main control logic
     cubeFound = False # Cube location has not yet been determined
     trajectoryComplete = False # No trajectory is underway
     targetJSReceived = False # No joint states have been received
@@ -79,7 +84,7 @@ class ControlLogic:
     currentJS = [0, 0, 0, 0, 0] # ([theta1, theta2, theta3, theta4, theta5])
     targetJS = [0, 0, 0, 0, 0] # ([theta1, theta2, theta3, theta4, theta5])
 
-    # cubeHomeThetas = 4 * [0] *
+    cubeHomeJS = [currentJS] * (Colour.values().length - 1) # Create an array of cubeHome
     cubeColour = Colour.UNKNOWN
 
     CLAW_UP_Z = 100 # rad
@@ -92,28 +97,29 @@ class ControlLogic:
     CLAW_OPEN_CLOSE_TIME = 0.2 # sec
     CUBE_HOME_TIME = 6 # sec
 
+
     def __init__(self):
         # Comms with IK node
-        self.IK_pub = rospy.Publisher('InverseKinematicsPub',
+        self.IK_pub = rospy.Publisher('CL_Positiion',
                                                DesPosition,
                                                queue_size=1)
-        self.IK_sub = rospy.Subscriber('InverseKinematicsSub',
+        self.IK_sub = rospy.Subscriber('IK_JS',
                                                  TargetJS,
                                                  cb_target_js)
         # Comms with Trajectory
-        self.trajectory_pub = rospy.Publisher('TrajectoryPub',
-                                               TargetJSTrajectory,
+        self.trajectory_pub = rospy.Publisher('CL_TargetJS',
+                                               TargetJointStateTrajectory,
                                                queue_size=1)
-        self.trajectory_sub = rospy.Subscriber('TrajectorySub',
+        self.trajectory_sub = rospy.Subscriber('Trajectory_Status',
                                                  TrajectoryComplete,
                                                  cb_trajectory_complete)
         # Comms with Camera
-        self.camera_sub = rospy.Subscriber('cubePose_sub',
+        self.camera_sub = rospy.Subscriber('Camera_Pose',
                                                  CubePose,
                                                  cb_cubePose)
         # Comms with actuator
-        self.actuator_sub = rospy.Subscriber('currentJS_sub',
-                                                 CurrentJS,
+        self.actuator_sub = rospy.Subscriber('Actuator_CurrentJS',
+                                                 CurrentJointState,
                                                  cb_currentJS)
 
     """ Callbacks for subscribers """
@@ -142,6 +148,7 @@ class ControlLogic:
         msg.position = self.cubePose
 
         self.IK_pub.publish(msg)
+
 
     def move(self, thetasTarget, movementDuration):
         msg = TargetJSTrajectory()
@@ -218,59 +225,62 @@ class ControlLogic:
     """ Main control loop """
     def control_loop(self):
         ibisState = self.ibisState
-
-
         cubeFound = self.cubeFound
         trajectoryComplete = self.trajectoryComplete
         targetJSReceived = self.targetJSReceived
 
         # Set to home
-        # INITIALISE:
         match ibisState:
             case SEARCHING:
                 # searching()
                 if cubeFound is True:
                     """ Receive cube pose from the camera """
                     ibisState = ControlState.CALCULATE_IK
-                    cubeFound = False
             case CALCULATE_IK:
                 calculate_JS()
                 if targetJSReceived is True:
                     ibisState = ControlState.MOVE_OVER_CUBE
+                    targetJSReceived = False
             case MOVE_OVER_CUBE:
                 move_over_cube()
                 if trajectoryComplete is True:
                     ibisState = ControlState.MOVE_DOWN
+                    trajectoryComplete = False
             case DOWN_PICKUP:
                 down_pickup()
                 if trajectoryComplete is True:
                     ibisState = ControlState.CLAW_PICKUP
+                    trajectoryComplete = False
             case CLAW_PICKUP:
                 claw_pickup()
                 if trajectoryComplete is True:
                     ibisState = ControlState.UP_PICKUP
+                    trajectoryComplete = False
             case UP_PICKUP:
                 up_pickup()
                 if trajectoryComplete is True:
                     ibisState = ControlState.CUBE_HOME
+                    trajectoryComplete = False
             case CUBE_HOME:
                 cube_home()
                 if trajectoryComplete is True:
                     ibisState = ControlState.DOWN_DROP
+                    trajectoryComplete = False
             case DOWN_DROP:
                 down_drop()
                 if trajectoryComplete is True:
                     ibisState = ControlState.CLAW_DROP
+                    trajectoryComplete = False
             case CLAW_DROP:
                 claw_drop()
                 if trajectoryComplete is True:
                     ibisState = ControlState.UP_DROP
+                    trajectoryComplete = False
             case UP_DROP:
                 up_drop()
                 if trajectoryComplete is True:
                     ibisState = ControlState.SEARCHING
-
-
+                    trajectoryComplete = False
 
 if __name__ == '__main__':
 # Initialise variables

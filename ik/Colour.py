@@ -1,6 +1,6 @@
 class Colour(Enum):
-    UNKNOWN = 0
-    RED = 1
-    GREEN = 2
-    BLUE = 3
-    YELLOW = 4
+    RED = 0
+    GREEN = 1
+    BLUE = 2
+    YELLOW = 3
+    UNKNOWN = 4

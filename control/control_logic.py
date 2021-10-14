@@ -1,6 +1,7 @@
 from enum import Enum
 import numpy as np
 import rospy
+from colour.py import Colour
 from std_msgs.msg import Float64
 from std_msgs.msg import Bool
 from std_msgs.msg import Header
@@ -43,13 +44,16 @@ class ControlState(Enum):
     DOWN_DROP = 8 # Arm moving down to cube home
     CLAW_DROP = 9 # Arm dropping the cube
     UP_DROP = 10 # Arm moving up from drop off
+    ZERO = 11 # All angles at home positions
 
+"""
 class Colour(Enum):
     UNKNOWN = 0
     RED = 1
     GREEN = 2
     BLUE = 3
     YELLOW = 4
+"""
 
 class ControlLogic:
     """ Attributes here """
@@ -61,18 +65,21 @@ class ControlLogic:
     cubePosition = [0, 0, 0, 0] # ([x, y, z, theta_z])
     currentJS = [0, 0, 0, 0, 0] # ([theta1, theta2, theta3, theta4, theta5])
     targetJS = [0, 0, 0, 0, 0] # ([theta1, theta2, theta3, theta4, theta5])
+
+    # cubeHomeThetas = 4 * [0] *
     cubeColour = Colour.UNKNOWN
 
-    CLAW_UP_Z = 100 # mm
-    CLAW_DOWN_Z = 5 # mm
+    CLAW_UP_Z = 100 # rad
+    CLAW_DOWN_Z = 5 # rad
+    CLAW_OPEN = 100 # rad
+    CLAW_CLOSE = 120 # rad
 
     OVER_CUBE_TIME = 2 # sec
     UP_DOWN_TIME = 1 # sec
-    CLAW_CLOSE_TIME = 0.2 # sec
+    CLAW_OPEN_CLOSE_TIME = 0.2 # sec
     CUBE_HOME_TIME = 6 # sec
 
     def __init__(self):
-
         # Comms with IK node
         self.IK_pub = rospy.Publisher('InverseKinematicsPub',
                                                DesPosition,
@@ -123,57 +130,83 @@ class ControlLogic:
 
         self.IK_pub.publish(msg)
 
-    def move_over_cube(self):
+    def move(self, thetasTarget, movementDuration):
         msg = TargetJSTrajectory()
-        msg.thetasTarget = [self.targetJS[0],
+        msg.thetasTarget = thetasTarget
+        msg.thetasCurrent = self.currentJS
+        msg.movementDuration = movementDuration
+        self.trajectoryComplete = False
+        self.trajectory_pub.publish(msg)
+
+    def move_over_cube(self):
+        thetasTarget = [self.targetJS[0],
                             self.targetJS[1],
                             self.targetJS[2],
                             self.CLAW_UP_Z,
                             self.CLAW_OPEN]
-        msg.thetasCurrent = [self.currentJS[0],
-                            self.currentJS[1],
-                            self.currentJS[2],
-                            self.currentJS[3],
-                            self.currentJS[4]]
-        msg.movementDuration = self.OVER_CUBE_TIME
-        self.trajectory_pub.publish(msg)
-        self.trajectoryComplete = False
+        movementDuration = self.OVER_CUBE_TIME
+        self.move(thetasTarget, movementDuration)
 
     def down_pickup(self):
-        msg = TargetJSTrajectory()
-        msg.thetasTarget = [self.targetJS[0],
+       thetasTarget = [self.targetJS[0],
                             self.targetJS[1],
                             self.targetJS[2],
-                            self.CLAW_UP_Z,
+                            self.CLAW_DOWN_Z,
                             self.CLAW_OPEN]
-        msg.thetasCurrent = [self.currentJS[0],
-                            self.currentJS[1],
-                            self.currentJS[2],
-                            self.currentJS[3],
-                            self.currentJS[4]]
-        msg.movementDuration = self.CUBE_DOWN_TIME
-        self.trajectory_pub.publish(msg)
-        self.trajectoryComplete = False
+       movementDuration = self.UP_DOWN_TIME
+       self.move(thetasTarget, movementDuration)
 
     def claw_pickup(self):
-        msg = TargetJSTrajectory()
-        msg.thetasTarget = [self.targetJS[0],
+        thetasTarget = [self.targetJS[0],
+                            self.targetJS[1],
+                            self.targetJS[2],
+                            self.CLAW_DOWN_Z,
+                            self.CLAW_CLOSE]
+        movementDuration = self.CLAW_OPEN_CLOSE_TIME
+        self.move(thetasTarget, movementDuration)
+
+    def up_pickup(self):
+        thetasTarget = [self.targetJS[0],
                             self.targetJS[1],
                             self.targetJS[2],
                             self.CLAW_UP_Z,
                             self.CLAW_CLOSE]
-        msg.thetasCurrent = [self.currentJS[0],
-                            self.currentJS[1],
-                            self.currentJS[2],
-                            self.currentJS[3],
-                            self.currentJS[4]]
-        msg.movementDuration = self.CUBE_CLOSE_TIME
-        self.trajectory_pub.publish(msg)
-        self.trajectoryComplete = False
+        movementDuration = self.UP_DOWN_TIME
+        self.move(thetasTarget, movementDuration)
+
+    def cube_home(self):
+        targetJS = self.get_cube_home_JS(self.cubeColour)
+        thetasTarget = [self.targetJS[0],
+                            self.targetJS[1],
+                            self.targetJS[2],
+                            self.CLAW_UP_Z,
+                            self.CLAW_CLOSE]
+        movementDuration = self.CUBE_HOME_TIME
+        self.move(thetasTarget, movementDuration)
+
+    def down_drop(self):
+        thetasTarget = [self.targetJS[0],
+                            self.targetJS[1],
+                            self.targetJS[2],
+                            self.CLAW_DOWN_Z,
+                            self.CLAW_CLOSE]
+        movementDuration = self.UP_DOWN_TIME
+        self.move(thetasTarget, movementDuration)
+
+    def up_drop(self):
+        thetasTarget = [self.targetJS[0],
+                            self.targetJS[1],
+                            self.targetJS[2],
+                            self.CLAW_DOWN_Z,
+                            self.CLAW_OPEN]
+        movementDuration = self.CLAW_OPEN_CLOSE_TIME
+        self.move(thetasTarget, movementDuration)
 
     """ Main control loop """
     def control_loop(self):
         ibisState = self.ibisState
+
+
         cubeFound = self.cubeFound
         trajectoryComplete = self.trajectoryComplete
         targetJSReceived = self.targetJSReceived
@@ -203,23 +236,23 @@ class ControlLogic:
                 if trajectoryComplete is True:
                     ibisState = ControlState.UP_PICKUP
             case UP_PICKUP:
-                # up_pickup()
+                up_pickup()
                 if trajectoryComplete is True:
                     ibisState = ControlState.CUBE_HOME
             case CUBE_HOME:
-                # cube_home()
+                cube_home()
                 if trajectoryComplete is True:
                     ibisState = ControlState.DOWN_DROP
             case DOWN_DROP:
-                # down_drop()
+                down_drop()
                 if trajectoryComplete is True:
                     ibisState = ControlState.CLAW_DROP
             case CLAW_DROP:
-                # claw_drop()
+                claw_drop()
                 if trajectoryComplete is True:
                     ibisState = ControlState.UP_DROP
             case UP_DROP:
-                # up_drop()
+                up_drop()
                 if trajectoryComplete is True:
                     ibisState = ControlState.SEARCHING
 

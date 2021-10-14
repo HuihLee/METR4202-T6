@@ -3,6 +3,7 @@ import modern_robotics as mr
 from enum import Enum
 
 class Colour(Enum):
+    ERROR
     RED = 0
     GREEN = 1
     BLUE = 2

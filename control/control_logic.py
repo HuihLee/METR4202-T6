@@ -99,6 +99,9 @@ class ControlLogic:
 
 
     def __init__(self):
+        # Initialize node
+        rospy.init_node('Control_Logic', anonymous=False)
+
         # Comms with IK node
         self.IK_pub = rospy.Publisher('CL_Positiion',
                                                DesPosition,

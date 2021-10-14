@@ -38,13 +38,12 @@ class Traj:
         thetaEnd = np.array([msg.endpos[0], msg.startpos[1], msg.startpos[2], msg.startpos[3], msg.startpos[4]])
         duration = msg.duration
         s(t) = mr.QuinticTimeScaling(Tf, t)
-        trajectory = mr.JointTrajectory(thetastart, thetaend, Tf, N, 5)
-        for point in trajectory
+        trajectory = mr.JointTrajectory(thetaStart, thetaEnd, Tf, N, 5)
+        for point in trajectory:
             self.servoPub.publish('desiredJointState')
         trajComplete = True
         self.controlPub.pub(trajComplete)
-        
-        
+
 
 if __name__ == '__main__':
     try:

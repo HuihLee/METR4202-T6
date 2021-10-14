@@ -5,7 +5,7 @@ from enum import Enum
 from geometry_msgs.msg import Pose
 from sensor_msgs.msg import JointState
 
-class IK_ibis:
+class IK_Ibis:
     # Params for the inverse kinematics of the position of the arm
     armA_l = 185.  # mm length of armA
     armB_l = 140.  # mm length of armB
@@ -13,22 +13,30 @@ class IK_ibis:
     thetas = np.array([0., 0., 0., 0., zHome]) # theta[0] is not a real joint
     thetaHomeOffset = (157.33 + 90) * (np.pi / 180);  # rad - this is the home angle of the arm relative to the x axis
     clawAngleOffset = -15 * (np.pi / 180)  # rad - offset angle for claw relative to armB
+    PITCH = 1.  # For the vertical axis, joint 4
 
     def __init__(self):
+        position = [0] * 3 # xyz (m)
+        orientation = 0 # rotation about z axis (rad)
+        msg = TargetJointState()
+
         # Initialize node
-        rospy.init_node('IK_3R_Robot', anonymous=True)
-        # Create publisher
-        self.pub = rospy.Publisher('joint_states', JointState, queue_size=10)
-        # Create subscriber
-        self.sub = rospy.Subscriber('des_pose', Pose, self.cb_sub)
+        rospy.init_node('Inverse_Kinematics', anonymous=True)
+        # Publish
+        self.pub = rospy.Publisher('IK_JS', TargetJointState, queue_size=1)
+        # Subscribe
+        self.sub = rospy.Subscriber('CL_Position', DesPosition, self.cb_calculate_ik)
 
-    def cb_sub(self, msg):
-        orientationDes = np.array([msg.orientation.x, msg.orientation.y, msg.orientation.z])
-        positionDes = np.array([msg.position.x, msg.position.y, msg.position.z])
+    def cb_calculate_ik(self, received):
+        self.position = np.array([received.position[0], received.position[1], received.position[2]])
+        self.orientation = np.array([0, 0, received.position[3]])
+        targetJS = self.IKin(self.position, self.orientation)
 
-        thetasTarget = self.IKin(positionDes, orientationDes)
 
-    def IKin(self, positionDes, orientationDes):
+        self.msg.thetas = targetJS.toList()
+        self.pub.Publish(self.msg)
+
+    def IKin(self, position, orientation):
         # TODO: test this function
         # TODO: should this position transformation happen elsewhere?
 
@@ -36,11 +44,11 @@ class IK_ibis:
         rotate0_1 = np.array([[np.cos(self.thetaHomeOffset), np.sin(self.thetaHomeOffset), 0],
                               [-1 * np.sin(self.thetaHomeOffset), np.cos(self.thetaHomeOffset), 0],
                               0, 0, 1])
-        positionDesArm = np.dot(rotate0_1, positionDes)
+        positionArm = np.dot(rotate0_1, position)
 
         # Calculate the arm positions
-        c = np.sqrt(positionDesArm[0] ** 2 + positionDesArm[1] ** 2)  # pythagoras theorem
-        gamma = np.arctan2(positionDesArm[1], positionDesArm[0])
+        c = np.sqrt(positionArm[0] ** 2 + positionArm[1] ** 2)  # pythagoras theorem
+        gamma = np.arctan2(positionArm[1], positionArm[0])
 
         cosC = (self.armA_l ** 2 + self.armB_l ** 2 - c ** 2) / \
                (2 * self.armA_l * self.armB_l)  # cosine rule
@@ -52,8 +60,8 @@ class IK_ibis:
         B = np.arccos(cosB)
         theta1_1 = gamma + B  # rad
 
-        # Keep the claw at it's home height
-        theta1_3 = self.thetaHome;
+        # Keep the claw at it's given height
+        theta1_3 = positionArm[2] * PITCH
 
         # Rotate desired orientation to the claw frame
         orientationArm = np.array([0, 0,

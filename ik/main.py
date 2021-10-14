@@ -3,7 +3,6 @@ import modern_robotics as mr
 from enum import Enum
 
 class Colour(Enum):
-    ERROR
     RED = 0
     GREEN = 1
     BLUE = 2
@@ -483,7 +482,7 @@ camera      | frame{6} S6 z6        | camera mounted on armA
 if __name__ == '__main__':
     np.set_printoptions(precision=2, suppress=True)
     """ Model parameters """
-    thetaHomeOffset = (157.33 + 90) * (np.pi / 180);  # rad - this is the home angle of the arm relative to the x axis
+    thetaHomeOffset = (157.33 + 90) * (np.pi / 180)  # rad - this is the home angle of the arm relative to the x axis
     clawAngleOffset = -15 * (np.pi / 180) # rad - offset angle for claw relative to armB
     z1 = 114. # mm height of the slew joint from origin
     armA_l = 185. # mm length of armA
@@ -507,8 +506,16 @@ if __name__ == '__main__':
     T2_3 = mr.RpToTrans(R3, np.array([armB_l, 0, 0])) # armB joint to claw orientation
     R4 = rot(np.array([0, 0, 1]), 0)
     T3_4 = mr.RpToTrans(R4, np.array([0, 0, (z4 - z1) + PITCH * thetas[4]]))
-    R4 = R3
-    T0_6 = mr.RpToTrans(R4, r_6) # Camera pose relative to frame {0}
+    R1C = np.array([[0, 0, 1],
+                    [1, 0, 0],
+                    [0, 1, 0]]) # z aligns with the x axis
+    RC6 = rot(np.array([0, 1, 0]), -1 * np.pi / 4) # rotate around the y axis
+    R06 = np.matmul(R1C, RC6)
+    T1_6 = mr.RpToTrans(R06, r_6 - np.array([0, 0, z1])) # Camera pose relative to frame {1}
+
+    T0_6 = T0_1 @ T1_6
+
+    #print(f"T0_6 = \n{T0_6}")
 
     # End effector position relative to home
     M = T0_1 @ T1_2 @ T2_3 @ T3_4

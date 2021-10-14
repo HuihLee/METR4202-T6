@@ -8,6 +8,19 @@ from std_msgs.msg import Header
 from geometry_msgs.msg import Pose
 from sensor_msgs.msg import JointState
 
+# importing sys to import files from different folders
+import sys
+sys.path.insert(0, '') #hierarchy -> '/home/user/folders'
+sys.path.insert(0, '')
+sys.path.insert(0, '')
+sys.path.insert(0, '')
+  
+# import all py files from different packages  
+from import * 
+from import *
+from import *
+from import *
+
 # ----
 """ Camera logic """
 # WAIT

@@ -1,1 +1,1 @@
-float32 thetas
+float32[5] thetas

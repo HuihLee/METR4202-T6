@@ -1,2 +1,2 @@
-float32[4] position 
+float64[4] position
 string colour

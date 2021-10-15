@@ -83,6 +83,10 @@ class FK_Ibis:
         # Initialize node
         rospy.init_node('Forward_Kinematics', anonymous=True)
         # Publish
-        self.pub = rospy.Publisher('IK_JS', TargetJointState, queue_size=1)
+        self.clawPosePub = rospy.Publisher('FK_Pose', ClawPose, queue_size=1)
         # Subscribe
-        self.sub = rospy.Subscriber('CL_Position', DesPosition, self.cb_calculate_ik)
+        self.actuatorPub = rospy.Subscriber('Actuator_CurrentJS', CurrentJointState, self.cb_calculate_claw_pose)
+
+    def calculate_claw_pose(self, msg):
+        thetas = np.array([msg.thetas])
+

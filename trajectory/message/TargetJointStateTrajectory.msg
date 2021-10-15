@@ -1,3 +1,3 @@
-float32[5] thetasTarget
-float32[5] thetasCurrent
-float32 motionDuration
+float64[5] thetasTarget
+float64[5] thetasCurrent
+float64 motionDuration

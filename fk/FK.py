@@ -14,6 +14,21 @@ def rot(axis, angle, vect=None, matrix=None):
         rotated = rotated * matrix
     return rotated
 
+"""
+This script primarily focuses on the transformations, kinematics and inverse
+kinematics of the robot arm for METR4202. The following robot has the following
+parts 
+
+Part        | Elements              | Description       
+-------------------------------------------------------
+origin      |                       | Located at the bottom of the slew axis of rotation
+armA        | frame{1} S1 theta1 z1 | The largest link. Associated with joint1
+armB        | frame{2} S2 theta2 y2 | Adjacent to armA. Associated with joint2
+couple      | frame{3} S3 theta3 y3 | Connects armB to claw. Associated with claw orientation
+claw        | frame{4} S4 theta4 z4 | End of the robot arm. Associated with claw height
+cube        | frame{5} S5           | cube to pick up 
+camera      | frame{6} S6 z6        | camera mounted on armA
+"""
 class FK_Ibis:
     """ Model parameters """
     thetaHomeOffset = (157.33 + 90) * (np.pi / 180)  # rad - this is the home angle of the arm relative to the x axis
@@ -40,11 +55,12 @@ class FK_Ibis:
     T2_3 = mr.RpToTrans(R3, np.array([armB_l, 0, 0])) # armB joint to claw orientation
     R4 = rot(np.array([0, 0, 1]), 0)
     T3_4 = mr.RpToTrans(R4, np.array([0, 0, (z4 - z1) + PITCH * thetas[4]]))
-    R1C = np.array([[0, 0, 1],
+    R1Z = np.array([[0, 0, 1],
                     [1, 0, 0],
                     [0, 1, 0]]) # z aligns with the x axis
-    RC6 = rot(np.array([0, 1, 0]), -1 * np.pi / 4) # rotate around the y axis
-    R06 = np.matmul(R1C, RC6)
+    RZY = rot(np.array([1, 0, 0]), np.pi * 1 / 3) # rotate around the body x axis
+    RY6 = rot(np.array([0, 1, 0]), -1 * np.pi / 4) # rotate around the y axis
+    R06 = R1Z @ RZY @ RY6
     T1_6 = mr.RpToTrans(R06, r_6 - np.array([0, 0, z1])) # Camera pose relative to frame {1}
 
     T0_6 = T0_1 @ T1_6
@@ -76,17 +92,53 @@ class FK_Ibis:
     S4 = np.block([np.array([0, 0, 0]), v4])
     Screws = np.array([S1, S2, S3, S4])
 
-    # Test Kinematics
-    # testKinematics(M, Screws, thetas)
-
-    def __init__(self)
+    def __init__(self):
+        """ Claw pose """
         # Initialize node
         rospy.init_node('Forward_Kinematics', anonymous=True)
+        # Create publisher
+        self.clawPosePub = rospy.Publisher('FK_ClawPose', ClawPose, queue_size=2)
+        # Create subscriber
+        self.actuatorSub = rospy.Subscriber('Actuator_CurrentJS', CurrentJointState, self.cb_calculate_claw_pose)
+
+        """ Cube pose """
         # Publish
-        self.clawPosePub = rospy.Publisher('FK_Pose', ClawPose, queue_size=1)
+        self.cubePosePub = rospy.Publisher('FK_CubePose', CubePose, queue_size=2)
         # Subscribe
-        self.actuatorPub = rospy.Subscriber('Actuator_CurrentJS', CurrentJointState, self.cb_calculate_claw_pose)
+        self.cubePoseSub = rospy.Subscriber('Camera_Pose', CubePose, self.cb_calculate_cube_pose)
 
     def calculate_claw_pose(self, msg):
-        thetas = np.array([msg.thetas])
+        self.thetas = np.array(msg.thetas)
+        T0_4 = mr.FKinSpace(self.M, self.Screws.T, self.thetas) # Transformation of claw
+        clawPose = ClawPose()
+        clawPose.position = [T0_4[0][3],  # x
+                             T0_4[1][3],  # y
+                             T0_4[2][3],  # z
+                             np.arccos(T0_4[0][0])] # theta_z
+        self.clawPosePub.publish(clawPose)
 
+    def calculate_cube_pose(self, msg):
+        R6_5 = rot(np.array([0, 0, 1]), msg.position[3])
+        r6_5 = np.array([msg.position[0],
+                         msg.position[1],
+                         msg.position[2]])
+        T6_5 = np.concatenate((R6_5, r6_5), axis=1)
+        T6_5 = np.concatenate((T6_5, np.array([0, 0, 0, 1])), axis=0)
+
+        T0_5 = self.T_0_6 @ T6_5
+
+        cubePose = CubePose()
+        cubePose.position = [T0_5[0][3],
+                             T0_5[1][3],
+                             T0_5[2][3],
+                             np.arccos(T0_5[0][0])]
+
+
+        self.cubePosePub.publish(cubePose)
+
+if __name__ == '__main__':
+    try:
+        FK_Ibis()
+        rospy.spin()
+    except rospy.ROSInterruptException:
+        pass

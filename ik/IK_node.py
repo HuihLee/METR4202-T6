@@ -16,10 +16,6 @@ class IK_Ibis:
     PITCH = 1.  # For the vertical axis, joint 4
 
     def __init__(self):
-        position = [0] * 3 # xyz (m)
-        orientation = 0 # rotation about z axis (rad)
-        msg = TargetJointState()
-
         # Initialize node
         rospy.init_node('Inverse_Kinematics', anonymous=True)
         # Publish
@@ -28,19 +24,19 @@ class IK_Ibis:
         self.sub = rospy.Subscriber('CL_Position', DesPosition, self.cb_calculate_ik)
 
     def cb_calculate_ik(self, received):
-        self.position = np.array([received.position[0], received.position[1], received.position[2]])
-        self.orientation = np.array([0, 0, received.position[3]])
-        targetJS = self.IKin(self.position, self.orientation)
+        position = np.array([received.position[0], received.position[1], received.position[2]])
+        orientation = np.array([0, 0, received.position[3]])
+        targetJS = self.IKin(position, orientation)
 
-
-        self.msg.thetas = targetJS.toList()
-        self.pub.Publish(self.msg)
+        msg = TargetJointState()
+        msg.thetas = targetJS.toList()
+        self.pub.Publish(msg)
 
     def IKin(self, position, orientation):
         # TODO: test this function
         # TODO: should this position transformation happen elsewhere?
 
-        # Rotate position to the offset frame for the arm
+        # Rotate position to the offset frame for the slew joint
         rotate0_1 = np.array([[np.cos(self.thetaHomeOffset), np.sin(self.thetaHomeOffset), 0],
                               [-1 * np.sin(self.thetaHomeOffset), np.cos(self.thetaHomeOffset), 0],
                               0, 0, 1])
@@ -61,23 +57,28 @@ class IK_Ibis:
         theta1_1 = gamma + B  # rad
 
         # Keep the claw at it's given height
-        theta1_3 = positionArm[2] * PITCH
+        theta1_3 = positionArm[2] * self.PITCH
 
         # Rotate desired orientation to the claw frame
         orientationArm = np.array([0, 0,
-                                   orientationDes[2]
+                                   orientation[2]
                                    - self.thetaHomeOffset
                                    - self.theta1_1
                                    - self.theta1_2
                                    - self.clawAngleOffset])
 
-        # Limit theta4 angles to +/- pi/2
-        theta4_calc = 0
+        # Limit theta3 angles to +/- pi/2
+        theta1_3 = 0
         if (orientationArm[2] > 0):
-            theta4_calc = np.mod(orientationArm[2], np.pi / 2)
+            theta1_3 = np.mod(orientationArm[2], np.pi / 2)
         elif (orientationArm[2] < 0):
-            theta4_calc = np.mod(orientationArm[2], -1 * np.pi / 2)
+            theta1_3 = np.mod(orientationArm[2], -1 * np.pi / 2)
 
         return (theta1_1, theta1_2, theta1_3)
 
-
+if __name__ == '__main__':
+    try:
+        IK_Ibis()
+        rospy.spin()
+    except rospy.ROSInterruptException:
+        pass

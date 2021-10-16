@@ -15,8 +15,8 @@ from tf.transformations import quaternion_matrix, rotation_matrix
 
 
 class Traj:
-    thetaStart = np.array([0,0,0,0,0])
-    thetaEnd = np.array([0,0,0,0,0])
+    thetaStart = np.array([0.,0.,0.,0.,0.])
+    thetaEnd = np.array([0.,0.,0.,0.,0.])
     duration = 0.0
 
     def __init__(self):

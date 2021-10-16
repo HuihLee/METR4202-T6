@@ -1,27 +1,34 @@
 import numpy as np
-import rospy
-import modern_robotics as mr
+#import rospy
 from enum import Enum
-from geometry_msgs.msg import Pose
-from sensor_msgs.msg import JointState
+#import Colour
+
+class Colour(Enum):
+    RED = 0
+    GREEN = 1
+    BLUE = 2
+    YELLOW = 3
 
 class IK_Ibis:
     # Params for the inverse kinematics of the position of the arm
-    armA_l = 185.  # mm length of armA
-    armB_l = 140.  # mm length of armB
-    zHome = 100. # mm home height of claw
-    thetas = np.array([0., 0., 0., 0., zHome]) # theta[0] is not a real joint
-    thetaHomeOffset = (157.33 + 90) * (np.pi / 180);  # rad - this is the home angle of the arm relative to the x axis
-    clawAngleOffset = -15 * (np.pi / 180)  # rad - offset angle for claw relative to armB
-    PITCH = 1.  # For the vertical axis, joint 4
+    armA_l = 185.   # mm length of armA
+    armB_l = 140.   # mm length of armB
+    zHome = 100.    # mm home height of claw
+    thetas = np.array([0., 0., 0., 0., zHome])          # theta[0] is not a real joint
+    thetaHomeOffset = (157.33 + 90) * (np.pi / 180)     # rad - this is the home angle of the arm relative to the x axis
+    clawAngleOffset = -15 * (np.pi / 180)               # rad - offset angle for claw relative to armB
+    PITCH = 1.
+    z4 = 10     # mm height of claw# For the vertical axis, joint 4
 
     def __init__(self):
+        """
         # Initialize node
         rospy.init_node('Inverse_Kinematics', anonymous=True)
         # Publish
         self.pub = rospy.Publisher('IK_JS', TargetJointState, queue_size=1)
         # Subscribe
         self.sub = rospy.Subscriber('CL_Position', DesPosition, self.cb_calculate_ik)
+        """
 
     def cb_calculate_ik(self, received):
         position = np.array([received.position[0], received.position[1], received.position[2]])
@@ -29,7 +36,7 @@ class IK_Ibis:
         targetJS = self.IKin(position, orientation)
 
         msg = TargetJointState()
-        msg.thetas = targetJS.toList()
+        msg.thetas = targetJS
         self.pub.Publish(msg)
 
     def IKin(self, position, orientation):
@@ -39,7 +46,7 @@ class IK_Ibis:
         # Rotate position to the offset frame for the slew joint
         rotate0_1 = np.array([[np.cos(self.thetaHomeOffset), np.sin(self.thetaHomeOffset), 0],
                               [-1 * np.sin(self.thetaHomeOffset), np.cos(self.thetaHomeOffset), 0],
-                              0, 0, 1])
+                              [0, 0, 1]])
         positionArm = np.dot(rotate0_1, position)
 
         # Calculate the arm positions
@@ -60,25 +67,88 @@ class IK_Ibis:
         theta1_3 = positionArm[2] * self.PITCH
 
         # Rotate desired orientation to the claw frame
-        orientationArm = np.array([0, 0,
-                                   orientation[2]
-                                   - self.thetaHomeOffset
-                                   - self.theta1_1
-                                   - self.theta1_2
-                                   - self.clawAngleOffset])
+        orientation_arm = (orientation -
+                           self.thetaHomeOffset -
+                           theta1_1 -
+                           theta1_2 -
+                           self.clawAngleOffset)
 
         # Limit theta3 angles to +/- pi/2
         theta1_3 = 0
-        if (orientationArm[2] > 0):
-            theta1_3 = np.mod(orientationArm[2], np.pi / 2)
-        elif (orientationArm[2] < 0):
-            theta1_3 = np.mod(orientationArm[2], -1 * np.pi / 2)
+        if orientation_arm >= 0:
+            theta1_3 = np.mod(orientation_arm, np.pi / 2)
+        elif orientation_arm < 0:
+            theta1_3 = np.mod(orientation_arm, -1 * np.pi / 2)
 
-        return (theta1_1, theta1_2, theta1_3)
+        return [theta1_1, theta1_2, theta1_3]
 
+    """ Offset theta1 for the slew axis """
+    def slew_angle(self, theta_home_offset, theta1):
+        new_angle = theta1 - theta_home_offset
+
+        if new_angle > np.pi:
+            new_angle = new_angle - 2 * np.pi
+        elif new_angle < -np.pi:
+            new_angle = new_angle + 2 * np.pi
+        return new_angle
+
+    # change angles to degrees
+    def to_degrees(self, angles):
+        for i, theta in zip(range(np.size(angles)), angles):
+            angles[i] = (theta / (np.pi)) * 180
+
+        return angles
+
+    def cube_home_analytical(self):  # cubeHomeAngles):
+        print("Initialise cube angles using analytical method")
+        cube_height = self.z4  # mm
+        cube_positions = np.array([
+            [[-125, -25, cube_height],
+             [-125, -75, cube_height],
+             [-175, -75, cube_height],
+             [-175, -25, cube_height]],
+            [[-25, -125, cube_height],
+             [-25, -175, cube_height],
+             [-75, -175, cube_height],
+             [-75, -125, cube_height]],
+            [[75, -125, cube_height],
+             [75, -175, cube_height],
+             [25, -175, cube_height],
+             [25, -125, cube_height]],
+            [[175, -25, cube_height],
+             [175, -75, cube_height],
+             [125, -75, cube_height],
+             [125, -25, cube_height]],
+        ])
+
+        colour = 0
+        colours = 4
+        positions = 4
+        cube_home_angles = np.array(np.zeros((colours, positions, 4)))
+        for colour in range(colours):
+            print(f"Colour {colour}")
+
+            for position in range(positions):
+                theta1, theta2, theta3 = self.IKin(cube_positions[colour][position], 0)  # zero angle
+                thetas_end = np.array([theta1, theta2, theta3, 0])
+                cube_home_angles[colour][position] = thetas_end
+                print(f"position = {cube_positions[colour][position]}")
+                print(f"\tarm angles = {self.to_degrees(thetas_end)}")
+                position = position + 1
+
+            print(" ---- ")
+
+        return cube_home_angles
+
+"""
 if __name__ == '__main__':
     try:
         IK_Ibis()
         rospy.spin()
     except rospy.ROSInterruptException:
         pass
+"""
+
+if __name__ == '__main__':
+    ibis = IK_Ibis()
+    ibis.cube_home_analytical()

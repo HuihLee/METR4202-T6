@@ -10,8 +10,9 @@ class Colour(Enum):
     YELLOW = 3
 
 class IK_Ibis:
+    """
     # Params for the inverse kinematics of the position of the arm
-    armA_l = 185.   # mm length of armA
+    self.armA_l = 185.   # mm length of armA
     armB_l = 140.   # mm length of armB
     zHome = 100.    # mm home height of claw
     thetas = np.array([0., 0., 0., 0., zHome])          # theta[0] is not a real joint
@@ -19,16 +20,25 @@ class IK_Ibis:
     clawAngleOffset = -15 * (np.pi / 180)               # rad - offset angle for claw relative to armB
     PITCH = 1.
     z4 = 10     # mm height of claw# For the vertical axis, joint 4
-
+    """
     def __init__(self):
-        """
+        # Params for the inverse kinematics of the position of the arm
+        self.armA_l = 185.  # mm length of armA
+        self.armB_l = 140.  # mm length of armB
+        self.zHome = 100.  # mm home height of claw
+        self.thetas = np.array([0., 0., 0., 0., self.zHome])  # theta[0] is not a real joint
+        self.thetaHomeOffset = (157.33 + 90) * (
+                    np.pi / 180)  # rad - this is the home angle of the arm relative to the x axis
+        self.clawAngleOffset = -15 * (np.pi / 180)  # rad - offset angle for claw relative to armB
+        self.PITCH = 1.
+        self.z4 = 10  # mm height of claw# For the vertical axis, joint 4
+
         # Initialize node
         rospy.init_node('Inverse_Kinematics', anonymous=True)
         # Publish
         self.pub = rospy.Publisher('IK_JS', TargetJointState, queue_size=1)
         # Subscribe
         self.sub = rospy.Subscriber('CL_Position', DesPosition, self.cb_calculate_ik)
-        """
 
     def cb_calculate_ik(self, received):
         position = np.array([received.position[0], received.position[1], received.position[2]])
@@ -40,9 +50,6 @@ class IK_Ibis:
         self.pub.Publish(msg)
 
     def IKin(self, position, orientation):
-        # TODO: test this function
-        # TODO: should this position transformation happen elsewhere?
-
         # Rotate position to the offset frame for the slew joint
         rotate0_1 = np.array([[np.cos(self.thetaHomeOffset), np.sin(self.thetaHomeOffset), 0],
                               [-1 * np.sin(self.thetaHomeOffset), np.cos(self.thetaHomeOffset), 0],
@@ -99,7 +106,7 @@ class IK_Ibis:
 
         return angles
 
-    def cube_home_analytical(self):  # cubeHomeAngles):
+    def cube_home_analytical(self):
         print("Initialise cube angles using analytical method")
         cube_height = self.z4  # mm
         cube_positions = np.array([
@@ -140,15 +147,9 @@ class IK_Ibis:
 
         return cube_home_angles
 
-"""
 if __name__ == '__main__':
     try:
         IK_Ibis()
         rospy.spin()
     except rospy.ROSInterruptException:
         pass
-"""
-
-if __name__ == '__main__':
-    ibis = IK_Ibis()
-    ibis.cube_home_analytical()

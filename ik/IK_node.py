@@ -9,6 +9,12 @@ class Colour(Enum):
     BLUE = 2
     YELLOW = 3
 
+"""
+class DesPosition:
+    position = [0., 0., 0.]
+    orientation_z = 0.
+"""
+
 class IK_Ibis:
     """
     # Params for the inverse kinematics of the position of the arm
@@ -33,21 +39,27 @@ class IK_Ibis:
         self.PITCH = 1.
         self.z4 = 10  # mm height of claw# For the vertical axis, joint 4
 
+        """
         # Initialize node
         rospy.init_node('Inverse_Kinematics', anonymous=True)
         # Publish
         self.pub = rospy.Publisher('IK_JS', TargetJointState, queue_size=1)
         # Subscribe
         self.sub = rospy.Subscriber('CL_Position', DesPosition, self.cb_calculate_ik)
+        """
 
     def cb_calculate_ik(self, received):
         position = np.array([received.position[0], received.position[1], received.position[2]])
         orientation = np.array([0, 0, received.position[3]])
         targetJS = self.IKin(position, orientation)
+        targetJS.append(0.)
+        targetJS.append(0.)
+        #print(f"js = {self.to_degrees(targetJS)}")
 
         msg = TargetJointState()
         msg.thetas = targetJS
         self.pub.Publish(msg)
+
 
     def IKin(self, position, orientation):
         # Rotate position to the offset frame for the slew joint
@@ -74,7 +86,7 @@ class IK_Ibis:
         theta1_3 = positionArm[2] * self.PITCH
 
         # Rotate desired orientation to the claw frame
-        orientation_arm = (orientation -
+        orientation_arm = (orientation[2] -
                            self.thetaHomeOffset -
                            theta1_1 -
                            theta1_2 -
@@ -147,9 +159,39 @@ class IK_Ibis:
 
         return cube_home_angles
 
+    def test_ik(self):
+        desPosition = DesPosition()
+        cube_height = self.z4  # mm
+        cube_positions = [
+            [-125, -25, cube_height],
+             [-125, -75, cube_height],
+             [-175, -75, cube_height],
+             [-175, -25, cube_height],
+            [-25, -125, cube_height],
+             [-25, -175, cube_height],
+             [-75, -175, cube_height],
+             [-75, -125, cube_height],
+            [75, -125, cube_height],
+             [75, -175, cube_height],
+             [25, -175, cube_height],
+             [25, -125, cube_height],
+            [175, -25, cube_height],
+             [175, -75, cube_height],
+             [125, -75, cube_height],
+             [125, -25, cube_height]]
+
+        for position in cube_positions:
+            desPosition.position = position
+            desPosition.position.append(0.)
+            self.cb_calculate_ik(desPosition)
+
 if __name__ == '__main__':
+    #ibis = IK_Ibis()
+    #ibis.test_ik()
+
     try:
         IK_Ibis()
         rospy.spin()
     except rospy.ROSInterruptException:
         pass
+

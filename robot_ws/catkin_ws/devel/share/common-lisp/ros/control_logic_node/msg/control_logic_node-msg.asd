@@ -1,0 +1,23 @@
+
+(cl:in-package :asdf)
+
+(defsystem "control_logic_node-msg"
+  :depends-on (:roslisp-msg-protocol :roslisp-utils )
+  :components ((:file "_package")
+    (:file "ClawPose" :depends-on ("_package_ClawPose"))
+    (:file "_package_ClawPose" :depends-on ("_package"))
+    (:file "CubePose" :depends-on ("_package_CubePose"))
+    (:file "_package_CubePose" :depends-on ("_package"))
+    (:file "CurrentJointState" :depends-on ("_package_CurrentJointState"))
+    (:file "_package_CurrentJointState" :depends-on ("_package"))
+    (:file "DesJointState" :depends-on ("_package_DesJointState"))
+    (:file "_package_DesJointState" :depends-on ("_package"))
+    (:file "DesPosition" :depends-on ("_package_DesPosition"))
+    (:file "_package_DesPosition" :depends-on ("_package"))
+    (:file "TargetJointState" :depends-on ("_package_TargetJointState"))
+    (:file "_package_TargetJointState" :depends-on ("_package"))
+    (:file "TargetJointStateTrajectory" :depends-on ("_package_TargetJointStateTrajectory"))
+    (:file "_package_TargetJointStateTrajectory" :depends-on ("_package"))
+    (:file "TrajectoryComplete" :depends-on ("_package_TrajectoryComplete"))
+    (:file "_package_TrajectoryComplete" :depends-on ("_package"))
+  ))

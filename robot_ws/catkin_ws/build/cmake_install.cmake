@@ -131,9 +131,17 @@ endif()
 if(NOT CMAKE_INSTALL_LOCAL_ONLY)
   # Include the install script for each subdirectory.
   include("/home/michael/METR4202-T6/robot_ws/catkin_ws/build/gtest/cmake_install.cmake")
+  include("/home/michael/METR4202-T6/robot_ws/catkin_ws/build/fiducials/fiducials/cmake_install.cmake")
   include("/home/michael/METR4202-T6/robot_ws/catkin_ws/build/camera_node/cmake_install.cmake")
+  include("/home/michael/METR4202-T6/robot_ws/catkin_ws/build/control_logic_node/cmake_install.cmake")
+  include("/home/michael/METR4202-T6/robot_ws/catkin_ws/build/forward_kinematics_node/cmake_install.cmake")
+  include("/home/michael/METR4202-T6/robot_ws/catkin_ws/build/inverse_kinematics_node/cmake_install.cmake")
   include("/home/michael/METR4202-T6/robot_ws/catkin_ws/build/servo_node/cmake_install.cmake")
+  include("/home/michael/METR4202-T6/robot_ws/catkin_ws/build/fiducials/fiducial_msgs/cmake_install.cmake")
+  include("/home/michael/METR4202-T6/robot_ws/catkin_ws/build/fiducials/fiducial_slam/cmake_install.cmake")
   include("/home/michael/METR4202-T6/robot_ws/catkin_ws/build/trajectory_node/cmake_install.cmake")
+  include("/home/michael/METR4202-T6/robot_ws/catkin_ws/build/fiducials/aruco_detect/cmake_install.cmake")
+  include("/home/michael/METR4202-T6/robot_ws/catkin_ws/build/ximea_ros_cam/cmake_install.cmake")
 
 endif()
 

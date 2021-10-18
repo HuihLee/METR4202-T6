@@ -1,2 +1,2 @@
-camera_node:servo_node:trajectory_node
+camera_node:control_logic_node:fiducials/aruco_detect:fiducials/fiducial_msgs:fiducials/fiducial_slam:fiducials/fiducials:forward_kinematics_node:inverse_kinematics_node:servo_node:trajectory_node:ximea_ros_cam
 -DCATKIN_DEVEL_PREFIX=/home/michael/METR4202-T6/robot_ws/catkin_ws/devel -DCMAKE_INSTALL_PREFIX=/home/michael/METR4202-T6/robot_ws/catkin_ws/install -G Unix Makefiles

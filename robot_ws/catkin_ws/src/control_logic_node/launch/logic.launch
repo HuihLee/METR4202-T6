@@ -15,11 +15,7 @@
     <node pkg = "servo_node" type = "servo_control.py" name="Servo_Control_node" />
 
 <!-- Launch camera node -->
-    <include file = "$(find camera_node)/launch/camera.launch" />
-
-    <!-- <include file="$(find rospy_tutorials)/003_listener_with_user_data/listener_with_user_data.launch" /> -->
-
-    <!-- <node pkg = "camera_node" type = "block_identification.py" name="Camera_Node" /> -->
+    <!-- <include file = "$(find camera_node)/launch/camera.launch" /> -->
 
 <!-- Launch Debugging/checking camera is in focus node -->
 

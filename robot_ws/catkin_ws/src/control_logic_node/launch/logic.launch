@@ -15,10 +15,10 @@
     <node pkg = "servo_node" type = "servo_control.py" name="Servo_Control_node" />
 
 <!-- Launch camera node -->
-    <!-- <include file = "$(find camera_node)/launch/camera.launch" /> -->
+    <include file = "$(find camera_node)/launch/camera.launch" />
 
 <!-- Launch Debugging/checking camera is in focus node -->
 
 <!-- Launch Debugging/checking rqt graph -->
-    <node pkg = "rqt_graph" type = "rqt_graph" name="display_node_comms" />
+    <!-- <node pkg = "rqt_graph" type = "rqt_graph" name="display_node_comms" /> -->
 </launch>

@@ -1,26 +1,23 @@
 from enum import Enum
 import numpy as np
 
-"""
 import rospy
-from Colour.py import Colour
-"""
-"""
+# from Colour.py import Colour
+
+
 from std_msgs.msg import Float64
 from std_msgs.msg import Bool
 from std_msgs.msg import Header
 from geometry_msgs.msg import Pose
 from sensor_msgs.msg import JointState
-"""
-"""
+
 # importing sys to import files from different folders
-import sys
+"""import sys
 sys.path.insert(0, '') #hierarchy -> '/home/user/folders'
 sys.path.insert(0, '')
 sys.path.insert(0, '')
 sys.path.insert(0, '')
 """
-
 # import all py files from different packages
 """
 from import * 

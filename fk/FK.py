@@ -70,7 +70,6 @@ class FK_Ibis:
         # Subscribe
         self.cubePoseSub = rospy.Subscriber('Camera_Pose', CubePose, self.cb_calculate_cube_pose)
 
-
     def initialise_robot_parameters(self):
         """ Model parameters """
         self.theta1_home_offset = (157.33 + 90) * (
@@ -209,8 +208,8 @@ class FK_Ibis:
         self.cb_calculate_claw_pose(msg)
 
 if __name__ == '__main__':
-    np.set_printoptions(precision=2, suppress=True)
-    fk_ibis = FK_Ibis()
+    #np.set_printoptions(precision=2, suppress=True)
+    #fk_ibis = FK_Ibis()
     #fk_ibis.test_claw_FK()
     #fk_ibis.test_camera_transforms()
 

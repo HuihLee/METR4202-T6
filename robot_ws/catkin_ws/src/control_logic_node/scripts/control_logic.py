@@ -132,6 +132,8 @@ class ControlLogic:
                                              CurrentJointState,
                                              self.cb_current_js)
 
+        self.waiting_bool = False # bool used idle state
+
         # Comms with FK
         """Are we using FK node??? I am confused on the structure now"""
 
@@ -261,69 +263,102 @@ class ControlLogic:
 
         else if self.ibisState is ControlState.CALCULATE_IK:
         # case ControlState.CALCULATE_IK:
-            self.calculate_JS()
-            #FIXME - do we need to change ibisState to something else until we recieve target joint state
-            if self.targetJSReceived is True:
-                self.ibisState = ControlState.MOVE_OVER_CUBE
-                self.targetJSReceived = False
+            if self.waiting_bool == False:
+                self.calculate_JS()
+                self.waiting_bool = True
+            else:
+                if self.targetJSReceived is True:
+                    self.ibisState = ControlState.MOVE_OVER_CUBE
+                    self.targetJSReceived = False
+                    self.waiting_bool = False
 
         else if self.ibisState is ControlState.MOVE_OVER_CUBE:
         # case ControlState.MOVE_OVER_CUBE:
-            self.move_over_cube()
-            #FIXME - again need to set to a state so we dont continously publish useless information or miss something
-            if self.trajectoryComplete is True:
-                self.ibisState = ControlState.MOVE_DOWN #FIXME There is nothing that checks for MOVE_DOWN? will assume its DOWN_PICKUP
-                self.trajectoryComplete = False
+            if self.waiting_bool ==  False:
+                self.move_over_cube()
+                self.waiting_bool = True
+            else:
+                if self.trajectoryComplete is True:
+                    self.ibisState = ControlState.DOWN_PICKUP 
+                    self.trajectoryComplete = False
+                    self.waiting_bool = False
 
         else if self.ibisState is ControlState.DOWN_PICKUP:
         # case ControlState.DOWN_PICKUP:
-            #TODO: need to add a waiting stage in all logic I guess :)
-            self.down_pickup()
-            if self.trajectoryComplete is True:
-                self.ibisState = ControlState.CLAW_PICKUP
-                self.trajectoryComplete = False
+            if self.waiting_bool == False
+                self.down_pickup()
+                self.waiting_bool = True
+            else:
+                if self.trajectoryComplete is True:
+                    self.ibisState = ControlState.CLAW_PICKUP
+                    self.trajectoryComplete = False
+                    self.waiting_bool = False
 
         else if self.ibisState is ControlState.CLAW_PICKUP:
         # case ControlState.CLAW_PICKUP:
-            self.claw_pickup()
-            if self.trajectoryComplete is True:
-                self.ibisState = ControlState.UP_PICKUP
-                self.trajectoryComplete = False
+            if self.waiting_bool == False:
+                self.claw_pickup()
+                self.waiting_bool =True
+            else:
+                if self.trajectoryComplete is True:
+                    self.ibisState = ControlState.UP_PICKUP
+                    self.trajectoryComplete = False
+                    self.waiting_bool = False
 
         else if self.ibisState is ControlState.UP_PICKUP:
         # case ControlState.UP_PICKUP:
-            self.up_pickup()
-            if self.trajectoryComplete is True:
-                self.ibisState = ControlState.CUBE_HOME
-                self.trajectoryComplete = False
+            if self.waiting_bool == False:
+                self.up_pickup()
+                self.waiting_bool = True
+            else:
+                if self.trajectoryComplete is True:
+                    self.ibisState = ControlState.CUBE_HOME
+                    self.trajectoryComplete = False
+                    self.waiting_bool = False
 
         else if self.ibisState is ControlState.CUBE_HOME:
         # case ControlState.CUBE_HOME:
-            self.cube_home()
-            if self.trajectoryComplete is True:
-                self.ibisState = ControlState.DOWN_DROP
-                self.trajectoryComplete = False
+            if self.waiting_bool == False:
+                self.cube_home()
+                self.waiting_bool = True
+            else:
+                if self.trajectoryComplete is True:
+                    self.ibisState = ControlState.DOWN_DROP
+                    self.trajectoryComplete = False
+                    self.waiting_bool = False
 
         else if self.ibisState is ControlState.DOWN_DROP:
         # case ControlState.DOWN_DROP:
-            self.down_drop()
-            if self.trajectoryComplete is True:
-                self.ibisState = ControlState.CLAW_DROP
-                self.trajectoryComplete = False
+            if self.waiting_bool == False:
+                self.down_drop()
+                self.waiting_bool = True
+            else:
+                if self.trajectoryComplete is True:
+                    self.ibisState = ControlState.CLAW_DROP
+                    self.trajectoryComplete = False
+                    self.waiting_bool = False
 
         else if self.ibisState is ControlState.CLAW_DROP:
         # case ControlState.CLAW_DROP:
-            self.claw_drop()
-            if self.trajectoryComplete is True:
-                self.ibisState = ControlState.UP_DROP
-                self.trajectoryComplete = False
+            if self.waiting_bool == False:
+                self.claw_drop()
+                self.waiting_bool = True
+            else:
+                if self.trajectoryComplete is True:
+                    self.ibisState = ControlState.UP_DROP
+                    self.trajectoryComplete = False
+                    self.waiting_bool = False
 
         else if self.ibisState is ControlState.UP_DROP:
         # case ControlState.UP_DROP:
-            self.up_drop()
-            if self.trajectoryComplete is True:
-                self.ibisState = ControlState.SEARCHING
-                self.trajectoryComplete = False
+            if self.waiting_bool == False:
+                self.up_drop()
+                self.waiting_bool = True
+            else:
+                if self.trajectoryComplete is True:
+                    self.ibisState = ControlState.SEARCHING
+                    self.trajectoryComplete = False
+                    self.waiting_bool = False
         #TODO: should probably add moving back to a home state before we start searching for next block
         #       we need this as 6 seconds to move from block home to next block may break the couple etc
 

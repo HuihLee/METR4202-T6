@@ -70,7 +70,7 @@ class ControlLogic:
     cubePosition = [0, 0, 0, 0]  # ([x, y, z, theta_z])
     currentJS = [0, 0, 0, 0, 0]  # ([theta1, theta2, theta3, theta4, theta5])
     targetJS = [0, 0, 0, 0, 0]  # ([theta1, theta2, theta3, theta4, theta5])
-    
+    cube_home = [RED, GREEN, BLUE, YELLOW]    # Index is left to right of block homes, integers are colours defined by enum 
     cubeHomeJS = [currentJS] * (len(Colour) - 1)  # Create an array of cubeHome
     cubeColour = Colour.UNKNOWN
 
@@ -135,7 +135,29 @@ class ControlLogic:
         # Comms with FK
         """Are we using FK node??? I am confused on the structure now"""
 
+        # Get block home positions from user
+        cube_home = get_block_homes()
+
     """ Actions from state machine """
+
+    def get_block_homes(self):
+        colour_string = input('From left to right, what is the colour order?: ')
+        colours = colour_string.split(',')
+        position = np.empty(4, dtype=int)
+        position_val = 0
+        for colour in colours:
+            if colour == "red":
+                position[position_val] = 0
+            elif colour == "green":
+                position[position_val] = 1
+            elif colour == "blue":
+                position[position_val] = 2
+            elif colour == "yellow":
+                position[position_val] = 3
+            else:
+                print("unknown string value...")
+            position_val = position_val+1
+        return position
 
     def calculate_JS(self):
         msg = DesPosition()

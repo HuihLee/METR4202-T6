@@ -82,11 +82,12 @@ class Camera:
                 message.position[3] = yaw            
                 message.colour = colour
 
-                print(colour)
+                # print(colour, x, y, z)
+                self.camera_pub.publish(message)
             except:
                 pass
             # print(x, y, z, yaw)
-            self.camera_pub.publish(message)
+            # self.camera_pub.publish(message)
 
     def cb_colour(self, data):
         block = data.fiducials

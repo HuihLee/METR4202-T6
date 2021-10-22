@@ -22,15 +22,28 @@ class Servo_Controller:
 
     # Current dynamixel joint states
     def cb_current_js(self, data):
-       self.currentJointPos = data.append(self.SG90)
+        joint1 = data[0]
+        joint2 = data[1]
+        joint3 = data[2]
+        joint4 = data[3]
+        self.currentJointPos = [joint1, joint2, joint3, joint4, self.SG90]
 
-    # Closes the gripper when the threshold pi/2 is passed through
+    # Closes the gripper when the threshold pi/2 is passed
     def gripperControl(self, rad):
         if rad < 1.57:
             self.duty_cycle = self.openPose
         else:
             self.duty_cycle = self.closePose
         return self.duty_cycle
+
+    def test(self):
+        self.testPos = JointState()
+        self.testPos.name = ["joint_1", "joint_2", "joint_3", "joint_4"]
+        self.testPos.position = [j1, j2, j3, j4]
+        self.testPos.velocity = [0.50, 1.00, 1.00, 1.00]
+        # Sets the position of the SG90 servo
+        self.testSG90 = j5
+
 
 
     def __init__(self):

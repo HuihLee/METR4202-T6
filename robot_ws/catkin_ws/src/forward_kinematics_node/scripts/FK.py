@@ -36,6 +36,39 @@ camera      | frame{6} S6 z6        | camera mounted on armA
 
 
 class FK_Ibis:
+
+    """callbacks"""
+    def cb_calculate_claw_pose(self, msg):
+        self.thetas[1:] = np.array(msg.thetas)
+        self.calculate_transformation_matrices() # For cube pose calculation
+        T0_4 = mr.FKinSpace(self.M, self.screws.T, self.thetas[1:])  # Transformation of claw
+        clawPose = ClawPose()
+        clawPose.position = [T0_4[0][3],  # x
+                             T0_4[1][3],  # y
+                             T0_4[2][3],  # z
+                             np.arccos(T0_4[0][0])]  # theta_z
+        self.clawPosePub.publish(clawPose)
+
+
+    def cb_calculate_cube_pose(self, msg):
+        self.R6_5 = rot(np.array([0, 0, 1]), msg.position[3])
+        self.r6_5 = np.array([msg.position[0],
+                              msg.position[1],
+                              msg.position[2]])
+        self.T6_5 = np.concatenate((self.R6_5, self.r6_5), axis=1)
+        self.T6_5 = np.concatenate((self.T6_5, np.array([0, 0, 0, 1])), axis=0)
+
+        T0_5 = self.T0_6 @ self.T6_5
+
+        cubePose = CubePose()
+        cubePose.position = [T0_5[0][3],
+                             T0_5[1][3],
+                             T0_5[2][3],
+                             np.arccos(T0_5[0][0])]
+
+        self.cubePosePub.publish(cubePose)
+
+    """"""
     def __init__(self):
         self.initialise_robot_parameters()
 
@@ -112,34 +145,6 @@ class FK_Ibis:
         S4 = np.block([np.array([0, 0, 0]), v4])
         self.screws = np.array([S1, S2, S3, S4])
 
-    def cb_calculate_claw_pose(self, msg):
-        self.thetas[1:] = np.array(msg.thetas)
-        self.calculate_transformation_matrices() # For cube pose calculation
-        T0_4 = mr.FKinSpace(self.M, self.screws.T, self.thetas[1:])  # Transformation of claw
-        clawPose = ClawPose()
-        clawPose.position = [T0_4[0][3],  # x
-                             T0_4[1][3],  # y
-                             T0_4[2][3],  # z
-                             np.arccos(T0_4[0][0])]  # theta_z
-        self.clawPosePub.publish(clawPose)
-
-    def cb_calculate_cube_pose(self, msg):
-        self.R6_5 = rot(np.array([0, 0, 1]), msg.position[3])
-        self.r6_5 = np.array([msg.position[0],
-                              msg.position[1],
-                              msg.position[2]])
-        self.T6_5 = np.concatenate((self.R6_5, self.r6_5), axis=1)
-        self.T6_5 = np.concatenate((self.T6_5, np.array([0, 0, 0, 1])), axis=0)
-
-        T0_5 = self.T0_6 @ self.T6_5
-
-        cubePose = CubePose()
-        cubePose.position = [T0_5[0][3],
-                             T0_5[1][3],
-                             T0_5[2][3],
-                             np.arccos(T0_5[0][0])]
-
-        self.cubePosePub.publish(cubePose)
 
     def calculate_transformation_matrices(self):
         # Relative transformation matrices

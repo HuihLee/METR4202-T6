@@ -1,8 +1,0 @@
-prefix=/home/michael/METR4202-T6/robot_ws/catkin_ws/install
-
-Name: ximea_ros_cam
-Description: Description of ximea_ros_cam
-Version: 1.0.0
-Cflags: -I${prefix}/include -I/usr/include
-Libs: -L${prefix}/lib -lximea_ros_cam
-Requires: roscpp roslib nodelet sensor_msgs image_transport camera_info_manager std_msgs message_generation diagnostic_updater

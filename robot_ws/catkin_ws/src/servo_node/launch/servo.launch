@@ -1,6 +1,11 @@
 <launch>
 
     <!-- launch config file -->
+    <node name="dynamixel_interface_node" pkg="dynamixel_interface" type="dynamixel_interface_controller_node" output="screen">
+        <rosparam command="load" file="$(find servo_node)/config/controller_config.yaml" />
+    </node>
 
     <!-- Launch script -->
+    <node pkg = "servo_node" type = "servo_control.py" name="Servo_Node" />
+
 </launch>

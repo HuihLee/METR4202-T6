@@ -10,17 +10,22 @@ from sensor_msgs.msg import JointState
 ROBOT_FREQ = 10
 
 class Servo_Controller:
-    
+
+    # Desired joint states for all the servos
     def cb_desired_js(self, data):
         self.pos = JointState()
         self.pos.name = ["joint_1", "joint_2", "joint_3", "joint_4"]
         self.pos.position = [data[0], data[1], data[2], data[3]]
         self.pos.velocity = [0.50, 1.00, 1.00, 1.00]
+        # Sets the position of the SG90 servo
+        self.SG90 = data[4]
 
-        sg90 = data[4]
+    # Current dynamixel joint states
+    def cb_current_js(self, data):
+       self.currentJointPos = data.append(self.SG90)
 
-    # closes the gripper when the threshold pi/2 is passed through
-    def closeGripper(self, rad):
+    # Closes the gripper when the threshold pi/2 is passed through
+    def gripperControl(self, rad):
         if rad < 1.57:
             self.duty_cycle = self.openPose
         else:
@@ -33,7 +38,8 @@ class Servo_Controller:
         rate = rospy.Rate(ROBOT_FREQ)
 
         # Comms with Dynamixels
-        self.pub = rospy.Publisher("desired_joint_states", JointState, queue_size = 10)
+        self.dynamixel_pub = rospy.Publisher("desired_joint_state", JointState, queue_size=10)
+        self.dynamixel_sub = rospy.Subscriber("joint_states", JointState, self.cb_current_js)
 
         # Comms with Trajectory Planner
         rospy.Subscriber("Trajectory_DesJS", DesJointState, self.cb_desired_js)
@@ -55,8 +61,10 @@ class Servo_Controller:
         pwm_servo.start(self.closePose) # Duty cycle of 7.2 is the gripper open pose
 
         while not rospy.is_shutdown():
-            self.pub.publish(self.pos)
-            pwm_servo.ChangeDutyCycle(self.duty_cycle)
+            self.dynamixel_pub.publish(self.pos)
+            pwm_servo.ChangeDutyCycle(self.gripperControl(self.SG90))
+            self.current_joint_pub.publish(self.currentJointPos)
+            rate.sleep()
 
 
 if __name__ == "__main__":

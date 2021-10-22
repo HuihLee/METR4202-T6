@@ -70,7 +70,7 @@ class ControlLogic:
     cubePosition = [0, 0, 0, 0]  # ([x, y, z, theta_z])
     currentJS = [0, 0, 0, 0, 0]  # ([theta1, theta2, theta3, theta4, theta5])
     targetJS = [0, 0, 0, 0, 0]  # ([theta1, theta2, theta3, theta4, theta5])
-    cube_home = [RED, GREEN, BLUE, YELLOW]    # Index is left to right of block homes, integers are colours defined by enum 
+    
     cubeHomeJS = [currentJS] * (len(Colour) - 1)  # Create an array of cubeHome
     cubeColour = Colour.UNKNOWN
 
@@ -135,8 +135,15 @@ class ControlLogic:
         # Comms with FK
         """Are we using FK node??? I am confused on the structure now"""
 
+        rate = rospy.Rate(10) # change hertz??
+
         # Get block home positions from user
-        cube_home = get_block_homes()
+        cube_home_array = get_block_homes()
+
+        #TODO: what calls control_logic? -> need to call function here
+        while not rospy.is_shutdown():    # maybe this can work?
+            control_logic()
+            rospy.sleep(0.1)
 
     """ Actions from state machine """
 
@@ -208,6 +215,7 @@ class ControlLogic:
 
     def cube_home(self):
         targetJS = self.get_cube_home_JS(self.cubeColour)
+        #TODO: create function for this section
         thetasTarget = [self.targetJS[0],
                         self.targetJS[1],
                         self.targetJS[2],
@@ -241,7 +249,7 @@ class ControlLogic:
 
     """ Main control loop """
 
-    def control_loop(self): # had to change to basic if switch case due to python version issues
+    def control_loop(self): #TODO: had to change to basic if switch case due to python version issues
         # Set to home
         # match self.ibisState:
         if self.ibisState is ControlState.SEARCHING:
@@ -250,60 +258,80 @@ class ControlLogic:
             if self.cubeFound is True:
                 """ Receive cube pose from the camera """
                 self.ibisState = ControlState.CALCULATE_IK
-        if self.ibisState is ControlState.CALCULATE_IK:
+
+        else if self.ibisState is ControlState.CALCULATE_IK:
         # case ControlState.CALCULATE_IK:
             self.calculate_JS()
+            #FIXME - do we need to change ibisState to something else until we recieve target joint state
             if self.targetJSReceived is True:
                 self.ibisState = ControlState.MOVE_OVER_CUBE
                 self.targetJSReceived = False
-        if self.ibisState is ControlState.MOVE_OVER_CUBE:
+
+        else if self.ibisState is ControlState.MOVE_OVER_CUBE:
         # case ControlState.MOVE_OVER_CUBE:
             self.move_over_cube()
+            #FIXME - again need to set to a state so we dont continously publish useless information or miss something
             if self.trajectoryComplete is True:
-                self.ibisState = ControlState.MOVE_DOWN
+                self.ibisState = ControlState.MOVE_DOWN #FIXME There is nothing that checks for MOVE_DOWN? will assume its DOWN_PICKUP
                 self.trajectoryComplete = False
-        if self.ibisState is ControlState.DOWN_PICKUP:
+
+        else if self.ibisState is ControlState.DOWN_PICKUP:
         # case ControlState.DOWN_PICKUP:
+            #TODO: need to add a waiting stage in all logic I guess :)
             self.down_pickup()
             if self.trajectoryComplete is True:
                 self.ibisState = ControlState.CLAW_PICKUP
                 self.trajectoryComplete = False
-        if self.ibisState is ControlState.CLAW_PICKUP:
+
+        else if self.ibisState is ControlState.CLAW_PICKUP:
         # case ControlState.CLAW_PICKUP:
             self.claw_pickup()
             if self.trajectoryComplete is True:
                 self.ibisState = ControlState.UP_PICKUP
                 self.trajectoryComplete = False
-        if self.ibisState is ControlState.UP_PICKUP:
+
+        else if self.ibisState is ControlState.UP_PICKUP:
         # case ControlState.UP_PICKUP:
             self.up_pickup()
             if self.trajectoryComplete is True:
                 self.ibisState = ControlState.CUBE_HOME
                 self.trajectoryComplete = False
-        if self.ibisState is ControlState.CUBE_HOME:
+
+        else if self.ibisState is ControlState.CUBE_HOME:
         # case ControlState.CUBE_HOME:
             self.cube_home()
             if self.trajectoryComplete is True:
                 self.ibisState = ControlState.DOWN_DROP
                 self.trajectoryComplete = False
-        if self.ibisState is ControlState.DOWN_DROP:
+
+        else if self.ibisState is ControlState.DOWN_DROP:
         # case ControlState.DOWN_DROP:
             self.down_drop()
             if self.trajectoryComplete is True:
                 self.ibisState = ControlState.CLAW_DROP
                 self.trajectoryComplete = False
-        if self.ibisState is ControlState.CLAW_DROP:
+
+        else if self.ibisState is ControlState.CLAW_DROP:
         # case ControlState.CLAW_DROP:
             self.claw_drop()
             if self.trajectoryComplete is True:
                 self.ibisState = ControlState.UP_DROP
                 self.trajectoryComplete = False
-        if self.ibisState is ControlState.UP_DROP:
+
+        else if self.ibisState is ControlState.UP_DROP:
         # case ControlState.UP_DROP:
             self.up_drop()
             if self.trajectoryComplete is True:
                 self.ibisState = ControlState.SEARCHING
                 self.trajectoryComplete = False
+        #TODO: should probably add moving back to a home state before we start searching for next block
+        #       we need this as 6 seconds to move from block home to next block may break the couple etc
+
+        #TODO: also recommend adding logic to adjust movement and stop moving to next stage if the blocks are moving
+        #       simple thresholding of block movement should suffice
+        else:
+            # has an error occured? 
+            print("ERROR: unknown ibisState")
 
 
 if __name__ == '__main__':

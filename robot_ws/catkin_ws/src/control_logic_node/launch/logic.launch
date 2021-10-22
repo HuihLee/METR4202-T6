@@ -12,7 +12,8 @@
     <node pkg = "trajectory_node" type = "robot_planner.py" name="Trajecotry_Node" />
 
 <!-- Launch servo node -->
-    <node pkg = "servo_node" type = "servo_control.py" name="Servo_Control_node" />
+    <!-- <node pkg = "servo_node" type = "servo_control.py" name="Servo_Control_node" /> -->
+    <include file = "$(find servo_node)/launch/servo.launch" />
 
 <!-- Launch camera node -->
     <include file = "$(find camera_node)/launch/camera.launch" />

@@ -9,7 +9,7 @@ class Colour(Enum):
     RED = 0
     GREEN = 1
     BLUE = 2
-    PURPLE = 3
+    YELLOW = 3
 
 
 """ Helper functions"""
@@ -301,21 +301,21 @@ def compareCubeHome(M, Screws, cubeHomeAngles):
     cubeHomeAngles[Colour.BLUE.value][3] = np.array([-83.09 * np.pi / 180,
                                                      -136.5 * np.pi / 180,
                                                      0, 0])
-    # PURPLE positions
-    cubeHomeAngles[Colour.PURPLE.value][0] = np.array([-150 * np.pi / 180,
+    # YELLOW positions
+    cubeHomeAngles[Colour.YELLOW.value][0] = np.array([-150 * np.pi / 180,
                                                        -115.84 * np.pi / 180,
                                                        0, 0])
-    cubeHomeAngles[Colour.PURPLE.value][1] = np.array([-133.23 * np.pi / 180,
+    cubeHomeAngles[Colour.YELLOW.value][1] = np.array([-133.23 * np.pi / 180,
                                                        -109.83 * np.pi / 180,
                                                        0, 0])
-    cubeHomeAngles[Colour.PURPLE.value][2] = np.array([-130.01 * np.pi / 180,
+    cubeHomeAngles[Colour.YELLOW.value][2] = np.array([-130.01 * np.pi / 180,
                                                        -128.97 * np.pi / 180,
                                                        0, 0])
-    cubeHomeAngles[Colour.PURPLE.value][3] = np.array([-150.47 * np.pi / 180,
+    cubeHomeAngles[Colour.YELLOW.value][3] = np.array([-150.47 * np.pi / 180,
                                                        -136.5 * np.pi / 180,
                                                        0, 0])
 
-    colours = [Colour.RED, Colour.GREEN, Colour.BLUE, Colour.PURPLE]
+    colours = [Colour.RED, Colour.GREEN, Colour.BLUE, Colour.YELLOW]
 
     for colour in colours:
         print("{}".format(colour))
@@ -354,7 +354,7 @@ def initialiseCubeAngles(cubeHomeAngles):
     # Inverse Kinematics for a point and orientation
     orientation = rot(np.array([0, 0, 0]), 0)
     colour = 0
-    colours = [Colour.RED, Colour.GREEN, Colour.BLUE, Colour.PURPLE]
+    colours = [Colour.RED, Colour.GREEN, Colour.BLUE, Colour.YELLOW]
     for colour in colours:
         position = 0
         positions = 4
@@ -378,7 +378,7 @@ def initialiseCubeAngles(cubeHomeAngles):
                 thetasInit = np.array([50 * np.pi / 180, -120 * np.pi / 180, 0., 0.])
             elif colour == Colour.BLUE:
                 thetasInit = np.array([80 * np.pi / 180, -120 * np.pi / 180, 0., 0.])
-            elif colour == Colour.PURPLE:
+            elif colour == Colour.YELLOW:
                 thetasInit = np.array([140 * np.pi / 180, -120 * np.pi / 180, 0., 0.])
 
             thetasEnd, success = mr.IKinSpace(Screws.T, M, T_des, thetasInit, errorOmega, errorPosition)
@@ -422,7 +422,7 @@ def cubeHomeAnalytical(cubeHomeAngles):
     ])
 
     colour = 0
-    colours = [Colour.RED, Colour.GREEN, Colour.BLUE, Colour.PURPLE]
+    colours = [Colour.RED, Colour.GREEN, Colour.BLUE, Colour.YELLOW]
     for colour in colours:
         position = 0
         positions = 4
@@ -442,7 +442,7 @@ def cubeHomeAnalytical(cubeHomeAngles):
 
 
 def cubeHomeTest(cubeHomeAngles):
-    colours = [Colour.RED, Colour.GREEN, Colour.BLUE, Colour.PURPLE]
+    colours = [Colour.RED, Colour.GREEN, Colour.BLUE, Colour.YELLOW]
 
     for colour in colours:
         print("{}".format(colour))
@@ -586,7 +586,7 @@ if __name__ == '__main__':
     # compareCubeHome(M, Screws, np.array(np.zeros((4, 4, 4))))
 
     """ Get angle values for the cube locations """
-    # cubeHomeAngles = np.array(np.zeros((4, 4, 4)))
+    # cubeHomeAngles = np.array(np.szeros((4, 4, 4)))
     # cubeHomeAngles = initialiseCubeAngles(cubeHomeAngles)
 
     """ Get angle values for the cube locations using analytical method"""

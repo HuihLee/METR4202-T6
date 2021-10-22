@@ -19,6 +19,19 @@ class DesPosition:
 """
 
 class IK_Ibis:
+
+    def cb_calculate_ik(self, received):
+        position = np.array([received.position[0], received.position[1], received.position[2]])
+        orientation = np.array([0, 0, received.position[3]])
+        targetJS = self.IKin(position, orientation)
+        targetJS.append(0.)
+        targetJS.append(0.)
+        #print(f"js = {self.to_degrees(targetJS)}")
+
+        msg = TargetJointState()
+        msg.thetas = targetJS
+        self.pub.Publish(msg)
+
     """
     # Params for the inverse kinematics of the position of the arm
     self.armA_l = 185.   # mm length of armA
@@ -41,28 +54,14 @@ class IK_Ibis:
         self.clawAngleOffset = -15 * (np.pi / 180)  # rad - offset angle for claw relative to armB
         self.PITCH = 1.
         self.z4 = 10  # mm height of claw# For the vertical axis, joint 4
-
         
         # Initialize node
         rospy.init_node('Inverse_Kinematics', anonymous=True)
         # Publish
-        self.pub = rospy.Publisher('IK_JS', TargetJointState, queue_size=1)
+        self.pub = rospy.Publisher('IK_JS', self.TargetJointState, queue_size=1)
         # Subscribe
-        self.sub = rospy.Subscriber('CL_Position', DesPosition, self.cb_calculate_ik)
+        self.sub = rospy.Subscriber('CL_Position', self.DesPosition, self.cb_calculate_ik)
         
-
-    def cb_calculate_ik(self, received):
-        position = np.array([received.position[0], received.position[1], received.position[2]])
-        orientation = np.array([0, 0, received.position[3]])
-        targetJS = self.IKin(position, orientation)
-        targetJS.append(0.)
-        targetJS.append(0.)
-        #print(f"js = {self.to_degrees(targetJS)}")
-
-        msg = TargetJointState()
-        msg.thetas = targetJS
-        self.pub.Publish(msg)
-
 
     def IKin(self, position, orientation):
         # Rotate position to the offset frame for the slew joint
@@ -105,6 +104,7 @@ class IK_Ibis:
         return [theta1_1, theta1_2, theta1_3]
 
     """ Offset theta1 for the slew axis """
+    #FIXME: nothing calls this function
     def slew_angle(self, theta_home_offset, theta1):
         new_angle = theta1 - theta_home_offset
 
@@ -121,6 +121,7 @@ class IK_Ibis:
 
         return angles
 
+    #FIXME: nothing caalls this function
     def cube_home_analytical(self):
         print("Initialise cube angles using analytical method")
         cube_height = self.z4  # mm

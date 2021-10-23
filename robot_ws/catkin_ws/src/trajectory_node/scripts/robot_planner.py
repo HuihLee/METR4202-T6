@@ -16,7 +16,6 @@ class Traj:
 
     def cb_control_logic(self, msg):
         Tf = msg.motionDuration #Total Time
-        t = 0 #current time
         method = 5
         
         thetaStart = np.array([msg.thetasCurrent[0], msg.thetasCurrent[1], msg.thetasCurrent[2], msg.thetasCurrent[3], msg.thetasCurrent[4]])

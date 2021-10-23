@@ -1,5 +1,4 @@
 #!/usr/bin/env python3
-from typing import List, Union, Any
 
 import rospy
 from enum import Enum
@@ -106,13 +105,20 @@ class ControlLogic:
     MOVE_HOME_TIME = 6  # sec
 
     """ Testing stuff """
-    test_joints = [[0, 0, 0, CLAW_UP_Z, CLAW_OPEN], [np.pi, 0, 0, CLAW_UP_Z, CLAW_OPEN],
-                   [0, 0, 0, CLAW_UP_Z, CLAW_OPEN], [-np.pi * 5 / 6, 0, 0, CLAW_UP_Z, CLAW_OPEN],
-                   [0, 0, 0, CLAW_UP_Z, CLAW_OPEN], [0, 135 * np.pi / 180, 0, CLAW_UP_Z, CLAW_OPEN],
+    test_joints = [[0, 0, 0, CLAW_UP_Z, CLAW_OPEN],
+                   [np.pi, 0, 0, CLAW_UP_Z, CLAW_OPEN],
                    [0, 0, 0, CLAW_UP_Z, CLAW_OPEN],
-                   [0, 0, 0, CLAW_UP_Z, CLAW_OPEN], [0, 0, np.pi / 2, CLAW_UP_Z, CLAW_OPEN],
-                   [0, 0, 0, CLAW_UP_Z, CLAW_OPEN], [0, 0, -np.pi / 2, CLAW_UP_Z, CLAW_OPEN],
-                   [0, 0, 0, CLAW_UP_Z, CLAW_OPEN], [0, 0, 0, CLAW_DOWN_Z, CLAW_OPEN], [0, 0, 0, CLAW_UP_Z, CLAW_OPEN],
+                   [-np.pi * 5 / 6, 0, 0, CLAW_UP_Z, CLAW_OPEN],
+                   [0, 0, 0, CLAW_UP_Z, CLAW_OPEN],
+                   [0, 135 * np.pi / 180, 0, CLAW_UP_Z, CLAW_OPEN],
+                   [0, 0, 0, CLAW_UP_Z, CLAW_OPEN],
+                   [0, 0, 0, CLAW_UP_Z, CLAW_OPEN],
+                   [0, 0, np.pi / 2, CLAW_UP_Z, CLAW_OPEN],
+                   [0, 0, 0, CLAW_UP_Z, CLAW_OPEN],
+                   [0, 0, -np.pi / 2, CLAW_UP_Z, CLAW_OPEN],
+                   [0, 0, 0, CLAW_UP_Z, CLAW_OPEN],
+                   [0, 0, 0, CLAW_DOWN_Z, CLAW_OPEN],
+                   [0, 0, 0, CLAW_UP_Z, CLAW_OPEN],
                    [0, 0, 0, CLAW_UP_Z, CLAW_CLOSE],
                    [0, 0, 0, CLAW_UP_Z, CLAW_OPEN]]
     test_iterator = 0
@@ -183,8 +189,9 @@ class ControlLogic:
 
         count = 0
         rospy.sleep(2)
-        operationState = OperationState.TEST_LOOP
+        operationState = OperationState.TEST_JOINTS
         rospy.logerr(operationState)
+        self.trajectoryComplete = True
         # TODO: what calls control_logic? -> need to call function here
         while not rospy.is_shutdown():  # maybe this can work?
             if operationState is OperationState.TEST_LOOP:
@@ -192,13 +199,10 @@ class ControlLogic:
                 self.cubeColour = 0
                 self.test_loop()
             elif operationState is OperationState.TEST_JOINTS:
-                self.trajectoryComplete = True
-                self.ibisState = ControlState.ZERO
                 self.joints_loop()
             else:
                 self.control_loop()
-
-            rospy.sleep(0.1)
+            rate.sleep()
 
     def test(self):
         message = TargetJointStateTrajectory()
@@ -545,7 +549,7 @@ class ControlLogic:
         if self.trajectoryComplete is True:
             self.test_iterator = self.test_iterator % 16
             rospy.sleep(2)
-            self.move(self.test_joints[self.test_iterator], 3)
+            self.move(self.test_joints[self.test_iterator], 6)
             self.test_iterator = self.test_iterator + 1
             self.trajectoryComplete = False
 

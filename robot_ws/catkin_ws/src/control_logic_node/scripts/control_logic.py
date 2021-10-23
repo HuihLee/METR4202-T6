@@ -33,10 +33,14 @@ from import *
 from import *
 from import *
 """
+""" Operation states of the ibis arm """
+class OperationState(Enum):
+    NORMAL = 0
+    TEST_LOOP = 1
+    TEST_JOINTS = 2
+operationState = OperationState.TEST_JOINTS
 
 """ Different states of the ibis arm"""
-TESTING = True
-
 class ControlState(Enum):
     ERROR = 0  # Something has gone wrong
     SEARCHING = 1  # Searching for a cube to pick up
@@ -92,6 +96,14 @@ class ControlLogic:
     CLAW_OPEN_CLOSE_TIME = 0.2  # sec
     CUBE_HOME_TIME = 6  # sec
     MOVE_HOME_TIME = 6 # sec
+
+    """ Testing stuff """
+    test_joints = [[0, 0, 0, CLAW_UP_Z, CLAW_OPEN], [np.pi, 0, 0,  CLAW_UP_Z, CLAW_OPEN], [0, 0, 0,  CLAW_UP_Z, CLAW_OPEN], [-np.pi * 5/6, 0, 0,  CLAW_UP_Z, CLAW_OPEN],
+                   [0, 0, 0,  CLAW_UP_Z, CLAW_OPEN], [0, 135 * np.pi/ 180, 0,  CLAW_UP_Z, CLAW_OPEN], [0, 0, 0,  CLAW_UP_Z, CLAW_OPEN],
+                    [0, 0, 0,  CLAW_UP_Z, CLAW_OPEN], [0, 0, np.pi/2 , CLAW_UP_Z, CLAW_OPEN], [0, 0, 0,  CLAW_UP_Z, CLAW_OPEN], [0, 0, -np.pi/2,  CLAW_UP_Z, CLAW_OPEN],
+                    [0, 0, 0,  CLAW_UP_Z, CLAW_OPEN], [0, 0, 0, CLAW_DOWN_Z, CLAW_OPEN], [0, 0, 0, CLAW_UP_Z, CLAW_OPEN], [0, 0, 0,  CLAW_UP_Z, CLAW_CLOSE],
+                   [0, 0, 0,  CLAW_UP_Z, CLAW_OPEN]]
+    test_iterator = 0
 
     """ Callbacks for subscribers """
 
@@ -160,9 +172,13 @@ class ControlLogic:
 
         #TODO: what calls control_logic? -> need to call function here
         while not rospy.is_shutdown():    # maybe this can work?
-            if TESTING:
+            if operationState is OperationState.TEST_LOOP:
                 self.ibisState = ControlState.ZERO
                 self.test_loop()
+            elif operationState is OperationState.TEST_JOINTS:
+                self.trajectoryComplete = True
+                self.ibisState = ControlState.ZERO
+                self.test_joints()
             else:
                 self.control_logic()
             rospy.sleep(0.1)
@@ -447,52 +463,58 @@ class ControlLogic:
             # has an error occured? 
             print("ERROR: unknown ibisState")
 
-""" Testing loop """
+    """ Testing loop """
 
-def test_loop(self):
-    # Go zero
-    if self.ibisState is ControlState.ZERO:
-        if self.waiting_bool == False:
-            self.move_zero()
-            self.waiting_bool = True
+    def test_loop(self):
+        # Go zero
+        if self.ibisState is ControlState.ZERO:
+            if self.waiting_bool == False:
+                self.move_zero()
+                self.waiting_bool = True
+            if self.trajectoryComplete is True:
+                self.ibisState = ControlState.SEARCHING
+                self.trajectoryComplete = False
+        # go to searching
+        else if self.ibisState is ControlState.SEARCHING:
+            # case ControlState.MOVE_HOME:
+            if self.waiting_bool == False:
+                self.move_home()
+                self.waiting_bool = True
+            else:
+                if self.trajectoryComplete is True:
+                    self.ibisState = ControlState.CLAW_PICKUP
+                    self.trajectoryComplete = False
+                    self.waiting_bool = False
+        else if self.ibisState is ControlState.CLAW_PICKUP:
+            # case ControlState.CLAW_PICKUP:
+            if self.waiting_bool == False:
+                self.move([self.targetJS[0],
+                                self.targetJS[1],
+                                self.targetJS[2],
+                                self.CLAW_DOWN_Z,
+                                self.CLAW_CLOSE], 3)
+                self.waiting_bool = True
+            else:
+                if self.trajectoryComplete is True:
+                    self.ibisState = ControlState.CUBE_HOME
+                    self.trajectoryComplete = False
+                    self.waiting_bool = False
+        else if self.ibisState is ControlState.CUBE_HOME:
+            # case ControlState.CUBE_HOME:
+            if self.waiting_bool == False:
+                self.cube_home()
+                self.waiting_bool = True
+            else:
+                if self.trajectoryComplete is True:
+                    self.ibisState = ControlState.ZERO
+                    self.trajectoryComplete = False
+                    self.waiting_bool = False
+
+    def test_joints(self):
+        # Go zero
         if self.trajectoryComplete is True:
-            self.ibisState = ControlState.SEARCHING
+            self.move(self.test_joints[self.test_iterator], 3)
             self.trajectoryComplete = False
-    # go to searching
-    else if self.ibisState is ControlState.SEARCHING:
-        # case ControlState.MOVE_HOME:
-        if self.waiting_bool == False:
-            self.move_home()
-            self.waiting_bool = True
-        else:
-            if self.trajectoryComplete is True:
-                self.ibisState = ControlState.CLAW_PICKUP
-                self.trajectoryComplete = False
-                self.waiting_bool = False
-    else if self.ibisState is ControlState.CLAW_PICKUP:
-        # case ControlState.CLAW_PICKUP:
-        if self.waiting_bool == False:
-            self.move([self.targetJS[0],
-                            self.targetJS[1],
-                            self.targetJS[2],
-                            self.CLAW_DOWN_Z,
-                            self.CLAW_CLOSE], 3)
-            self.waiting_bool = True
-        else:
-            if self.trajectoryComplete is True:
-                self.ibisState = ControlState.CUBE_HOME
-                self.trajectoryComplete = False
-                self.waiting_bool = False
-    else if self.ibisState is ControlState.CUBE_HOME:
-        # case ControlState.CUBE_HOME:
-        if self.waiting_bool == False:
-            self.cube_home()
-            self.waiting_bool = True
-        else:
-            if self.trajectoryComplete is True:
-                self.ibisState = ControlState.ZERO
-                self.trajectoryComplete = False
-                self.waiting_bool = False
 
 if __name__ == '__main__':
     try:

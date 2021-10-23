@@ -89,7 +89,7 @@ class ControlLogic:
                     [0, 0, 0, 0, 0], [0, 0, 0, 0, 0], [0, 0, 0, 0, 0], [0, 0, 0, 0, 0],
                     [0, 0, 0, 0, 0], [0, 0, 0, 0, 0], [0, 0, 0, 0, 0], [0, 0, 0, 0, 0],
                     [0, 0, 0, 0, 0], [0, 0, 0, 0, 0], [0, 0, 0, 0, 0], [0, 0, 0, 0, 0]]
-    cubeColour = Colour.UNKNOWN
+    cubeColour = 0
     cubes_found = [0, 0, 0, 0]
 
     CLAW_UP_Z = 1.3  # rad
@@ -187,14 +187,14 @@ class ControlLogic:
         while not rospy.is_shutdown():  # maybe this can work?
             if operationState is OperationState.TEST_LOOP:
                 self.ibisState = ControlState.ZERO
-                self.cubeColour = Colour.RED
+                self.cubeColour = 0
                 self.test_loop()
             elif operationState is OperationState.TEST_JOINTS:
                 self.trajectoryComplete = True
                 self.ibisState = ControlState.ZERO
-                self.test_joints()
+                self.joints_loop()
             else:
-                self.control_logic()
+                self.control_loop()
 
             rospy.sleep(0.1)
 
@@ -240,10 +240,10 @@ class ControlLogic:
                 self.targetJSReceived = False
 
     def get_cube_home_JS(self, colour):
-        self.cubes_found[colour.value] += 1
-        return self.cube_home_JS \
-            [colour.value] \
-            [self.cubes_found[colour.value] - 1]
+        pos = self.cubes_found[colour]
+        js = self.cube_home_JS[colour][pos]
+        self.cubes_found[colour] = self.cubes_found[colour] + 1
+        return js
 
     """ Actions from state machine """
 
@@ -268,7 +268,7 @@ class ControlLogic:
 
     def calculate_JS(self):
         msg = DesPosition()
-        msg.position = self.cubePose
+        msg.position = self.cubePosition
 
         self.IK_pub.publish(msg)
 
@@ -529,7 +529,7 @@ class ControlLogic:
         elif self.ibisState is ControlState.CUBE_HOME:
             # case ControlState.CUBE_HOME:
             if self.waiting_bool == False:
-                self.move([135 * np.pi / 180, -np.pi, np.pi, self.CLAW_UP_Z, self.CLAW_CLOSE])
+                self.move([135 * np.pi / 180, -np.pi, np.pi, self.CLAW_UP_Z, self.CLAW_CLOSE], 5)
                 self.waiting_bool = True
             else:
                 if self.trajectoryComplete is True:
@@ -538,10 +538,11 @@ class ControlLogic:
                     self.trajectoryComplete = False
                     self.waiting_bool = False
 
-    def test_joints(self):
+    def joints_loop(self):
         # Go zero
         if self.trajectoryComplete is True:
-            self.test_iterator = self.test_iteratorlen % (self.test_joints)
+            self.test_iterator = self.test_iterator % 16
+            rospy.sleep(2)
             self.move(self.test_joints[self.test_iterator], 3)
             self.test_iterator = self.test_iterator + 1
             self.trajectoryComplete = False

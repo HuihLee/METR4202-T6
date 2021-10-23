@@ -95,21 +95,21 @@ class ControlLogic:
     # Callback for cube pose subscription
     def cb_cubePose(self, msg):
         self.cubePosition = msg.position
-        cubeColour = Colour[msg.colour]
-        cubeFound = True
+        self.cubeColour = Colour[msg.colour]
+        self.cubeFound = True
 
     # Callback for current joint state subscription
     def cb_current_js(self, msg):
-        currentJS = msg.thetas
+        self.currentJS = msg.thetas
 
     # Callback for trajectory complete sub
     def cb_trajectory_complete(self, msg):
-        trajectoryComplete = True
+        self.trajectoryComplete = True
 
     # Callback for target js sub
     def cb_target_js(self, msg):
-        targetJS = msg.thetas
-        targetJSReceived = True
+        self.targetJS = msg.thetas
+        self.targetJSReceived = True
 
     def __init__(self):
         # Initialize node
@@ -149,7 +149,7 @@ class ControlLogic:
 
         # Get block home positions from user
         #TODO: I think i stuffed this up. Must fix
-        cube_home_array = self.get_block_homes()
+        self.cube_home_array = self.get_block_homes()
 
         # Calculate the IK for each of the cube home
         # positions and add them to an array of joint states

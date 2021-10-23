@@ -21,6 +21,8 @@ BLUE =      2
 YELLOW =    3
 UNKNOWN =   4
 
+MOVEMENT_THRESHOLD = 0.002
+
 class Camera:
 
     def cd_fiducial(self, data):
@@ -33,61 +35,59 @@ class Camera:
                 y = block[0].results[0].pose.pose.position.y
                 z = block[0].results[0].pose.pose.position.z
 
-                # get rotation
-                x_quat = block[0].results[0].pose.pose.orientation.x
-                y_quat = block[0].results[0].pose.pose.orientation.y
-                z_quat = block[0].results[0].pose.pose.orientation.z
-                w_quat = block[0].results[0].pose.pose.orientation.w
+                if self.check_block_still(x, y):
+                    # get rotation
+                    x_quat = block[0].results[0].pose.pose.orientation.x
+                    y_quat = block[0].results[0].pose.pose.orientation.y
+                    z_quat = block[0].results[0].pose.pose.orientation.z
+                    w_quat = block[0].results[0].pose.pose.orientation.w
 
-                t1 = 2.0 * (w_quat * z_quat + x_quat * y_quat)
-                t2 = 1.0 - 2.0 * (y_quat * y_quat + z_quat * z_quat)
-                yaw = abs(math.atan2(t1, t2))
+                    t1 = 2.0 * (w_quat * z_quat + x_quat * y_quat)
+                    t2 = 1.0 - 2.0 * (y_quat * y_quat + z_quat * z_quat)
+                    yaw = abs(math.atan2(t1, t2))
+                    
+                    if yaw > math.pi:
+                        yaw = yaw - math.pi
+
+                    if yaw > math.pi/2:
+                        yaw = yaw - math.pi/2
+                    
+                    angle = yaw * 180/math.pi
+
+                    new_y = max(self.y0, self.y1, self.y2, self.y3)+20
+                    new_x = (self.x0 + self.x1 + self.x2 + self.x3)/4
+                    # roi_y = (self.y2+self.y3)/2 + 15
+                    
+
+                    colour = self.get_colour(10, 10, new_x, new_y, self.image)
                 
-                if yaw > math.pi:
-                    yaw = yaw - math.pi
+                    # create message 
+                    message = CubePose()
+                    message.position[0] = x
+                    message.position[1] = y
+                    message.position[2] = z
+                    message.position[3] = yaw            
+                    message.colour = colour
 
-                if yaw > math.pi/2:
-                    yaw = yaw - math.pi/2
-                
-                angle = yaw * 180/math.pi
-
-                # get colour
-
-                # width = self.x3 - self.x2
-                # height = 10
-                # roi_x = (self.x2+self.x3)/2
-                # if self.y2 > self.y3:
-                #     roi_y = self.y2+10
-                # else:
-                #     roi_y = self.y3+10
-                # print("new box")
-                # print(self.x0, self.y0)
-                # print(self.x1, self.y1)
-                # print(self.x2, self.y2)
-                # print(self.x3, self.y3)
-                # print("\n")
-
-                new_y = max(self.y0, self.y1, self.y2, self.y3)+20
-                new_x = (self.x0 + self.x1 + self.x2 + self.x3)/4
-                # roi_y = (self.y2+self.y3)/2 + 15
-                
-
-                colour = self.get_colour(10, 10, new_x, new_y, self.image)
-              
-                # create message 
-                message = CubePose()
-                message.position[0] = x
-                message.position[1] = y
-                message.position[2] = z
-                message.position[3] = yaw            
-                message.colour = colour
-
-                # print(colour, x, y, z)
-                self.camera_pub.publish(message)
+                    # print(colour, x, y, z)
+                    self.camera_pub.publish(message)
+                    
             except:
                 pass
             # print(x, y, z, yaw)
             # self.camera_pub.publish(message)
+
+    def check_block_still(self, x, y):
+        movement_x = abs(self.prev_x_pos - x)
+        movement_y = abs(self.prev_y_pos - y)
+        self.prev_x_pos = x
+        self.prev_y_pos = y
+
+        if movement_x < MOVEMENT_THRESHOLD or movement_y < MOVEMENT_THRESHOLD:
+            # block is still
+            return True
+        else:
+            return False
 
     def cb_colour(self, data):
         block = data.fiducials
@@ -192,6 +192,9 @@ class Camera:
         self.y1 = None
         self.y2 = None
         self.y3 = None
+
+        self.prev_x_pos = None
+        self.prev_y_pos = None
 
         self.image = None
 

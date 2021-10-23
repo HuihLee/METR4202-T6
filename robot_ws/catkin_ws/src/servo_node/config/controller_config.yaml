@@ -8,7 +8,7 @@ diagnostics_rate: 1               # rate to publish diagnostic information
 dataport_rate: 1                  # rate to read from dynamixel external dataports
 
 # The below values are used as global defaults and are applied for each servo unless overridden in the entry for the servo below
-global_max_velocity: 6.0           # maximum joint speed (rad/s) (in position or velocity control)
+global_max_velocity: 1.0           # maximum joint speed (rad/s) (in position or velocity control)
 global_torque_limit: 1.0          # maximum motor torque for all modes, given as a fraction of rated max (0-1)
 
 
@@ -41,13 +41,13 @@ ports:
           min_pos: 0
           max_pos: 1023
 
-          - id: 3
+        - id: 3
           joint_name: joint_3
           zero_pos: 512
           min_pos: 0
           max_pos: 1023
 
-          - id: 4
+        - id: 4
           joint_name: joint_4
           zero_pos: 512
           min_pos: 0

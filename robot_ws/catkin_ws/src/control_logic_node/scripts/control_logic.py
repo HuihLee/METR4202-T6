@@ -50,6 +50,7 @@ class ControlState(Enum):
     CLAW_DROP = 9  # Arm dropping the cube
     UP_DROP = 10  # Arm moving up from drop off
     ZERO = 11  # All angles at home positions
+    MOVE_HOME = 12 # Robot moving back to home
 
 
 class Colour(Enum):
@@ -58,6 +59,7 @@ class Colour(Enum):
     BLUE = 2
     YELLOW = 3
     UNKNOWN = 4
+
 
 class ControlLogic:
     """ Attributes here """
@@ -69,7 +71,6 @@ class ControlLogic:
     cubePosition = [0, 0, 0, 0]  # ([x, y, z, theta_z])
     currentJS = [0, 0, 0, 0, 0]  # ([theta1, theta2, theta3, theta4, theta5])
     targetJS = [0, 0, 0, 0, 0]  # ([theta1, theta2, theta3, theta4, theta5])
-
     searching_JS = []
 
     cube_home_array = []
@@ -90,6 +91,7 @@ class ControlLogic:
     UP_DOWN_TIME = 1  # sec
     CLAW_OPEN_CLOSE_TIME = 0.2  # sec
     CUBE_HOME_TIME = 6  # sec
+    MOVE_HOME_TIME = 6 # sec
 
     """ Callbacks for subscribers """
 
@@ -233,7 +235,7 @@ class ControlLogic:
     def move(self, thetasTarget, movementDuration):
         msg = TargetJSTrajectory()
         msg.thetasTarget = thetasTarget
-        msg.thetasCurrent = self.currentJS ##### bad :(
+        msg.thetasCurrent = self.currentJS 
         msg.movementDuration = movementDuration
         self.trajectoryComplete = False
         self.trajectory_pub.publish(msg)
@@ -304,6 +306,14 @@ class ControlLogic:
                         self.CLAW_DOWN_Z,
                         self.CLAW_OPEN]
         self.move(thetasTarget, self.CLAW_OPEN_CLOSE_TIME)
+        
+    def move_home(self):
+        thetasTarget = [self.targetJS[0],
+                        self.targetJS[1],
+                        self.targetJS[2],
+                        self.CLAW_DOWN_Z,
+                        self.CLAW_OPEN]
+        self.move(thetasTarget, self.MOVE_HOME_TIME)
 
     """ Main control loop """
 
@@ -316,7 +326,8 @@ class ControlLogic:
             if self.cubeFound is True:
                 """ Receive cube pose from the camera """
                 self.ibisState = ControlState.CALCULATE_IK
-
+                self.cubeFound = False
+                
         else if self.ibisState is ControlState.CALCULATE_IK:
         # case ControlState.CALCULATE_IK:
             if self.waiting_bool == False:
@@ -412,20 +423,27 @@ class ControlLogic:
                 self.waiting_bool = True
             else:
                 if self.trajectoryComplete is True:
+                    self.ibisState = ControlState.MOVE_HOME
+                    self.trajectoryComplete = False
+                    self.waiting_bool = False
+                    
+        else if self.ibisState is ControlState.MOVE_HOME:
+        # case ControlState.MOVE_HOME:
+            if self.waiting_bool == False:
+                self.move_home()
+                self.waiting_bool = True
+            else:
+                if self.trajectoryComplete is True:
                     self.ibisState = ControlState.SEARCHING
                     self.trajectoryComplete = False
                     self.waiting_bool = False
-        #TODO: should probably add moving back to a home state before we start searching for next block
-        #       we need this as 6 seconds to move from block home to next block may break the couple etc
-
-        #TODO: also recommend adding logic to adjust movement and stop moving to next stage if the blocks are moving
-        #       simple thresholding of block movement should suffice
+            
         else:
             # has an error occured? 
             print("ERROR: unknown ibisState")
 
-        """ Testing loop """
-        
+""" Testing loop """
+
 
 if __name__ == '__main__':
     try:

@@ -70,9 +70,15 @@ class ControlLogic:
     cubePosition = [0, 0, 0, 0]  # ([x, y, z, theta_z])
     currentJS = [0, 0, 0, 0, 0]  # ([theta1, theta2, theta3, theta4, theta5])
     targetJS = [0, 0, 0, 0, 0]  # ([theta1, theta2, theta3, theta4, theta5])
-    
-    cubeHomeJS = [currentJS] * (len(Colour) - 1)  # Create an array of cubeHome
+
+    cube_home_array = []
+
+    cube_home_JS = [[0, 0, 0, 0, 0], [0, 0, 0, 0, 0], [0, 0, 0, 0, 0], [0, 0, 0, 0, 0],
+                    [0, 0, 0, 0, 0], [0, 0, 0, 0, 0], [0, 0, 0, 0, 0], [0, 0, 0, 0, 0],
+                    [0, 0, 0, 0, 0], [0, 0, 0, 0, 0], [0, 0, 0, 0, 0], [0, 0, 0, 0, 0],
+                    [0, 0, 0, 0, 0], [0, 0, 0, 0, 0], [0, 0, 0, 0, 0], [0, 0, 0, 0, 0]]
     cubeColour = Colour.UNKNOWN
+    cubes_found = [0, 0, 0, 0]
 
     CLAW_UP_Z = 100  # rad
     CLAW_DOWN_Z = 5  # rad
@@ -88,22 +94,22 @@ class ControlLogic:
 
     # Callback for cube pose subscription
     def cb_cubePose(self, msg):
-        cubePosition = msg.position
-        cubeColour = Colour[msg.colour]
-        cubeFound = True
+        self.cubePosition = msg.position
+        self.cubeColour = Colour[msg.colour]
+        self.cubeFound = True
 
     # Callback for current joint state subscription
     def cb_current_js(self, msg):
-        currentJS = msg.thetas
+        self.currentJS = msg.thetas
 
     # Callback for trajectory complete sub
     def cb_trajectory_complete(self, msg):
-        trajectoryComplete = True
+        self.trajectoryComplete = True
 
     # Callback for target js sub
     def cb_target_js(self, msg):
-        currentJS = msg.thetas
-        targetJSReceived = True
+        self.targetJS = msg.thetas
+        self.targetJSReceived = True
 
     def __init__(self):
         # Initialize node
@@ -128,6 +134,7 @@ class ControlLogic:
                                            CubePose,
                                            self.cb_cubePose)
         # Comms with actuator
+        ## TODO poll this continuously
         self.actuator_sub = rospy.Subscriber('Actuator_CurrentJS',
                                              CurrentJointState,
                                              self.cb_current_js)
@@ -137,15 +144,60 @@ class ControlLogic:
         # Comms with FK
         """Are we using FK node??? I am confused on the structure now"""
 
+
         rate = rospy.Rate(10) # change hertz??
 
         # Get block home positions from user
-        cube_home_array = get_block_homes()
+        #TODO: I think i stuffed this up. Must fix
+        self.cube_home_array = self.get_block_homes()
+
+        # Calculate the IK for each of the cube home
+        # positions and add them to an array of joint states
+        self.initialise_cube_home_JS()
 
         #TODO: what calls control_logic? -> need to call function here
         while not rospy.is_shutdown():    # maybe this can work?
-            control_logic()
+            self.control_logic()
             rospy.sleep(0.1)
+
+    """ Initialise joint positions for cube homes """
+    def initialise_cube_home_JS(self):
+        cubeHeight = 10  # mm
+        cubePositions = [
+            [[-125, -25, cubeHeight],
+             [-125, -75, cubeHeight],
+             [-175, -75, cubeHeight],
+             [-175, -25, cubeHeight]],
+            [[-25, -125, cubeHeight],
+             [-25, -175, cubeHeight],
+             [-75, -175, cubeHeight],
+             [-75, -125, cubeHeight]],
+            [[75, -125, cubeHeight],
+             [75, -175, cubeHeight],
+             [25, -175, cubeHeight],
+             [25, -125, cubeHeight]],
+            [[175, -25, cubeHeight],
+             [175, -75, cubeHeight],
+             [125, -75, cubeHeight],
+             [125, -25, cubeHeight]],
+        ]
+        msg = DesPosition()
+        for colour_bin in range(4):
+            for position in range(4):
+                msg.position = cubePositions[colour_bin][position]
+                msg.orientation = 0
+                self.IK_pub.publish(msg)
+                while self.targetJSReceived is False:
+                    # do nothing
+                    rospy.sleep(0.05)
+                self.cube_home_JS[colour_bin][position] = self.targetJS
+                self.targetJSReceived = False
+
+    def get_cube_home_JS(self, colour):
+        self.cubes_found[colour.value] += 1
+        return self.cube_home_JS \
+            [colour.value] \
+            [self.cubes_found[colour.value] - 1]
 
     """ Actions from state machine """
 
@@ -177,7 +229,7 @@ class ControlLogic:
     def move(self, thetasTarget, movementDuration):
         msg = TargetJSTrajectory()
         msg.thetasTarget = thetasTarget
-        msg.thetasCurrent = self.currentJS
+        msg.thetasCurrent = self.currentJS ##### bad :(
         msg.movementDuration = movementDuration
         self.trajectoryComplete = False
         self.trajectory_pub.publish(msg)
@@ -216,7 +268,7 @@ class ControlLogic:
         self.move(thetasTarget, self.UP_DOWN_TIME)
 
     def cube_home(self):
-        targetJS = self.get_cube_home_JS(self.cubeColour)
+        self.targetJS = self.get_cube_home_JS(self.cubeColour)
         #TODO: create function for this section
         thetasTarget = [self.targetJS[0],
                         self.targetJS[1],

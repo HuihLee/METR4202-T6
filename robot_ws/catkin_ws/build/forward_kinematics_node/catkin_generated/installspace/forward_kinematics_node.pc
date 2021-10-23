@@ -1,8 +1,0 @@
-prefix=/home/michael/METR4202-T6/robot_ws/catkin_ws/install
-
-Name: forward_kinematics_node
-Description: Description of forward_kinematics_node
-Version: 0.0.0
-Cflags: 
-Libs: -L${prefix}/lib 
-Requires: 

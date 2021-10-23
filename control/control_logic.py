@@ -63,6 +63,11 @@ class ControlLogic:
     currentJS = [0, 0, 0, 0, 0]  # ([theta1, theta2, theta3, theta4, theta5])
     targetJS = [0, 0, 0, 0, 0]  # ([theta1, theta2, theta3, theta4, theta5])
 
+    cubeHomeJS = [[0, 0, 0, 0, 0], [0, 0, 0, 0, 0], [0, 0, 0, 0, 0], [0, 0, 0, 0, 0],
+                  [0, 0, 0, 0, 0], [0, 0, 0, 0, 0], [0, 0, 0, 0, 0], [0, 0, 0, 0, 0],
+                  [0, 0, 0, 0, 0], [0, 0, 0, 0, 0], [0, 0, 0, 0, 0], [0, 0, 0, 0, 0],
+                  [0, 0, 0, 0, 0], [0, 0, 0, 0, 0], [0, 0, 0, 0, 0], [0, 0, 0, 0, 0]]
+
     cubeHomeJS = [currentJS] * (Colour.values().length - 1)  # Create an array of cubeHome
     cubeColour = Colour.UNKNOWN
 
@@ -261,6 +266,31 @@ class ControlLogic:
                 if self.trajectoryComplete is True:
                     self.ibisState = ControlState.SEARCHING
                     self.trajectoryComplete = False
+
+    def initialise_cube_angles(self):
+        cubeHeight = 10  # mm
+        cubePositions = np.array([
+            [[-125, -25, cubeHeight],
+             [-125, -75, cubeHeight],
+             [-175, -75, cubeHeight],
+             [-175, -25, cubeHeight]],
+            [[-25, -125, cubeHeight],
+             [-25, -175, cubeHeight],
+             [-75, -175, cubeHeight],
+             [-75, -125, cubeHeight]],
+            [[75, -125, cubeHeight],
+             [75, -175, cubeHeight],
+             [25, -175, cubeHeight],
+             [25, -125, cubeHeight]],
+            [[175, -25, cubeHeight],
+             [175, -75, cubeHeight],
+             [125, -75, cubeHeight],
+             [125, -25, cubeHeight]],
+        ])
+
+        for colour in range(4):
+            for position in range(4):
+
 
 
 if __name__ == '__main__':

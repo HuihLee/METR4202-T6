@@ -86,10 +86,10 @@ class ControlLogic:
     cubeColour = Colour.UNKNOWN
     cubes_found = [0, 0, 0, 0]
 
-    CLAW_UP_Z = 100  # rad
-    CLAW_DOWN_Z = 5  # rad
-    CLAW_OPEN = 100  # rad
-    CLAW_CLOSE = 120  # rad
+    CLAW_UP_Z = 1.3  # rad
+    CLAW_DOWN_Z = -0.6  # rad
+    CLAW_OPEN =3  # rad
+    CLAW_CLOSE = 0  # rad
 
     OVER_CUBE_TIME = 2  # sec
     UP_DOWN_TIME = 1  # sec
@@ -128,7 +128,7 @@ class ControlLogic:
 
     def __init__(self):
         # Initialize node
-        rospy.init_node('Control_Logic', anonymous=False)
+        rospy.init_node('Control_Logic', anonymous=False, log_level=rospy.DEBUG)
 
         # Comms with IK node
         self.IK_pub = rospy.Publisher('CL_Position',
@@ -171,10 +171,14 @@ class ControlLogic:
     #self.initialise_cube_home_JS()
         
         count = 0
+        rospy.sleep(2)
+        operationState = OperationState.TEST_LOOP
+        rospy.logerr(operationState)
         #TODO: what calls control_logic? -> need to call function here
         while not rospy.is_shutdown():    # maybe this can work?
             if operationState is OperationState.TEST_LOOP:
                 self.ibisState = ControlState.ZERO
+                self.cubeColour = Colour.RED
                 self.test_loop()
             elif operationState is OperationState.TEST_JOINTS:
                 self.trajectoryComplete = True
@@ -260,10 +264,10 @@ class ControlLogic:
         self.IK_pub.publish(msg)
 
     def move(self, thetasTarget, movementDuration):
-        msg = TargetJSTrajectory()
+        msg = TargetJointStateTrajectory()
         msg.thetasTarget = thetasTarget
         msg.thetasCurrent = self.currentJS 
-        msg.movementDuration = movementDuration
+        msg.motionDuration = movementDuration
         self.trajectoryComplete = False
         self.trajectory_pub.publish(msg)
 
@@ -358,10 +362,10 @@ class ControlLogic:
                 """ Receive cube pose from the camera """
                 self.ibisState = ControlState.CALCULATE_IK
         elif self.ibisState is ControlState.CALCULATE_IK:
-                self.cubeFound = False
+            self.cubeFound = False
 
-       #else if self.ibisState is ControlState.CALCULATE_IK:
-        # case ControlState.CALCULATE_IK:
+            #else if self.ibisState is ControlState.CALCULATE_IK:
+            # case ControlState.CALCULATE_IK:
             if self.waiting_bool == False:
                 self.calculate_JS()
                 self.waiting_bool = True
@@ -459,7 +463,7 @@ class ControlLogic:
                     self.trajectoryComplete = False
                     self.waiting_bool = False
                     
-        else if self.ibisState is ControlState.MOVE_HOME:
+        elif self.ibisState is ControlState.MOVE_HOME:
         # case ControlState.MOVE_HOME:
             if self.waiting_bool == False:
                 self.move_home()
@@ -486,7 +490,7 @@ class ControlLogic:
                 self.ibisState = ControlState.SEARCHING
                 self.trajectoryComplete = False
         # go to searching
-        else if self.ibisState is ControlState.SEARCHING:
+        elif self.ibisState is ControlState.SEARCHING:
             # case ControlState.MOVE_HOME:
             if self.waiting_bool == False:
                 self.move_home()
@@ -496,7 +500,7 @@ class ControlLogic:
                     self.ibisState = ControlState.CLAW_PICKUP
                     self.trajectoryComplete = False
                     self.waiting_bool = False
-        else if self.ibisState is ControlState.CLAW_PICKUP:
+        elif self.ibisState is ControlState.CLAW_PICKUP:
             # case ControlState.CLAW_PICKUP:
             if self.waiting_bool == False:
                 self.move([self.targetJS[0],
@@ -510,7 +514,7 @@ class ControlLogic:
                     self.ibisState = ControlState.CUBE_HOME
                     self.trajectoryComplete = False
                     self.waiting_bool = False
-        else if self.ibisState is ControlState.CUBE_HOME:
+        elif self.ibisState is ControlState.CUBE_HOME:
             # case ControlState.CUBE_HOME:
             if self.waiting_bool == False:
                 self.cube_home()
@@ -524,7 +528,7 @@ class ControlLogic:
     def test_joints(self):
         # Go zero
         if self.trajectoryComplete is True:
-            self.move(self.test_joints[self.test_iterator], 3)
+            #self.move(self.test_joints[self.test_iterator], 3)
             self.trajectoryComplete = False
 
 if __name__ == '__main__':

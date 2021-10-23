@@ -161,7 +161,8 @@ class ControlLogic:
         #TODO: what calls control_logic? -> need to call function here
         while not rospy.is_shutdown():    # maybe this can work?
             if TESTING:
-                self.testing_loop()
+                self.ibisState = ControlState.ZERO
+                self.test_loop()
             else:
                 self.control_logic()
             rospy.sleep(0.1)
@@ -315,6 +316,10 @@ class ControlLogic:
                         self.CLAW_OPEN]
         self.move(thetasTarget, self.MOVE_HOME_TIME)
 
+    def move_zero(self):
+        thetasTarget = [0, 0, 0, self.CLAW_UP_Z, self.CLAW_OPEN]
+        self.move(thetasTarget, 10)
+
     """ Main control loop """
 
     def control_loop(self): #TODO: had to change to basic if switch case due to python version issues
@@ -444,6 +449,50 @@ class ControlLogic:
 
 """ Testing loop """
 
+def test_loop(self):
+    # Go zero
+    if self.ibisState is ControlState.ZERO:
+        if self.waiting_bool == False:
+            self.move_zero()
+            self.waiting_bool = True
+        if self.trajectoryComplete is True:
+            self.ibisState = ControlState.SEARCHING
+            self.trajectoryComplete = False
+    # go to searching
+    else if self.ibisState is ControlState.SEARCHING:
+        # case ControlState.MOVE_HOME:
+        if self.waiting_bool == False:
+            self.move_home()
+            self.waiting_bool = True
+        else:
+            if self.trajectoryComplete is True:
+                self.ibisState = ControlState.CLAW_PICKUP
+                self.trajectoryComplete = False
+                self.waiting_bool = False
+    else if self.ibisState is ControlState.CLAW_PICKUP:
+        # case ControlState.CLAW_PICKUP:
+        if self.waiting_bool == False:
+            self.move([self.targetJS[0],
+                            self.targetJS[1],
+                            self.targetJS[2],
+                            self.CLAW_DOWN_Z,
+                            self.CLAW_CLOSE], 3)
+            self.waiting_bool = True
+        else:
+            if self.trajectoryComplete is True:
+                self.ibisState = ControlState.CUBE_HOME
+                self.trajectoryComplete = False
+                self.waiting_bool = False
+    else if self.ibisState is ControlState.CUBE_HOME:
+        # case ControlState.CUBE_HOME:
+        if self.waiting_bool == False:
+            self.cube_home()
+            self.waiting_bool = True
+        else:
+            if self.trajectoryComplete is True:
+                self.ibisState = ControlState.ZERO
+                self.trajectoryComplete = False
+                self.waiting_bool = False
 
 if __name__ == '__main__':
     try:

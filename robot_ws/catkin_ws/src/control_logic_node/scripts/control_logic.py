@@ -35,7 +35,7 @@ from import *
 """
 
 """ Different states of the ibis arm"""
-
+TESTING = True
 
 class ControlState(Enum):
     ERROR = 0  # Something has gone wrong
@@ -59,7 +59,6 @@ class Colour(Enum):
     YELLOW = 3
     UNKNOWN = 4
 
-
 class ControlLogic:
     """ Attributes here """
     ibisState = ControlState.SEARCHING  # State of the main control logic
@@ -70,6 +69,8 @@ class ControlLogic:
     cubePosition = [0, 0, 0, 0]  # ([x, y, z, theta_z])
     currentJS = [0, 0, 0, 0, 0]  # ([theta1, theta2, theta3, theta4, theta5])
     targetJS = [0, 0, 0, 0, 0]  # ([theta1, theta2, theta3, theta4, theta5])
+
+    searching_JS = []
 
     cube_home_array = []
 
@@ -157,7 +158,10 @@ class ControlLogic:
 
         #TODO: what calls control_logic? -> need to call function here
         while not rospy.is_shutdown():    # maybe this can work?
-            self.control_logic()
+            if TESTING:
+                self.testing_loop()
+            else:
+                self.control_logic()
             rospy.sleep(0.1)
 
     """ Initialise joint positions for cube homes """
@@ -420,6 +424,8 @@ class ControlLogic:
             # has an error occured? 
             print("ERROR: unknown ibisState")
 
+        """ Testing loop """
+        
 
 if __name__ == '__main__':
     try:

@@ -60,6 +60,33 @@ class FK_Ibis:
 
         T0_5 = self.T0_6 @ self.T6_5
 
+        # Ensure that the calculated pose is within the allowable workspace in the xy plane
+        for coordinate in range(2):
+            value = T0_5[coordinate][3]
+            # check the positive range
+            if value >= 0:
+                # Check the lower range
+                if value < self.workspace_lower_limit[coordinate]:
+                    value = self.workspace_lower_limit[coordinate]
+                # Check the upper range
+                elif value > self.workspace_upper_limit[coordinate]:
+                    value = self.workspace_upper_limit[coordinate]
+            # check the positive range
+            elif value < 0:
+                # Check the lower range
+                if value > -self.workspace_lower_limit[coordinate]:
+                    value = -self.workspace_lower_limit[coordinate]
+                # Check the upper range
+                elif value < -self.workspace_upper_limit[coordinate]:
+                    value = -self.workspace_upper_limit[coordinate]
+            value = T0_5[coordinate][3]
+
+        # Ensure that the vertical position is within the allowable workspace
+        if T0_5[2][3] < self.workspace_lower_limit[2]:
+            T0_5[2][3] = self.workspace_lower_limit[2]
+        elif T0_5[2][3] > self.workspace_upper_limit[2]:
+            T0_5[2][3] = self.workspace_upper_limit[2]
+
         cubePose = CubePose()
         cubePose.position = [T0_5[0][3],
                              T0_5[1][3],
@@ -70,6 +97,10 @@ class FK_Ibis:
 
     """"""
     def __init__(self):
+        self.workspace_lower_limit = [80, 80, 10]
+        self.workspace_upper_limit = [310, 310, 100]
+
+
         self.initialise_robot_parameters()
 
         ## Claw pose ##
@@ -110,10 +141,10 @@ class FK_Ibis:
 
         # Rotational matrices for the camera frame
         self.R1Z = np.array([[0, 0, 1],
-                             [1, 0, 0],
-                             [0, 1, 0]])  # z aligns with the x axis
-        self.RZY = rot(np.array([0, 1, 0]), -1 * np.pi / 4)  # rotate around the y axis
-        self.RY6 = rot(np.array([1, 0, 0]), self.camera_tilt)  # rotate around the body x axis
+                             [-1, 0, 0],
+                             [0, -1, 0]])  # z aligns with the x axis
+        self.RZY = rot(np.array([0, 1, 0]), 1 * np.pi / 4)  # rotate around the y axis
+        self.RY6 = rot(np.array([1, 0, 0]), -1 * self.camera_tilt)  # rotate around the body x axis
         self.R16 = self.R1Z @ self.RZY @ self.RY6
 
         self.calculate_transformation_matrices()

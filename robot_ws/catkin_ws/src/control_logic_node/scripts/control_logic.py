@@ -125,7 +125,7 @@ class ControlLogic:
         # Comms with Trajectory
         self.trajectory_pub = rospy.Publisher('CL_TargetJS',
                                               TargetJointStateTrajectory,
-                                              queue_size=1)
+                                              queue_size=10)
         self.trajectory_sub = rospy.Subscriber('Trajectory_Status',
                                                TrajectoryComplete,
                                                self.cb_trajectory_complete)
@@ -145,21 +145,34 @@ class ControlLogic:
         """Are we using FK node??? I am confused on the structure now"""
 
 
-        rate = rospy.Rate(10) # change hertz??
-
+        rate = rospy.Rate(100) # change hertz??
+        
         # Get block home positions from user
         #TODO: I think i stuffed this up. Must fix
-        self.cube_home_array = self.get_block_homes()
+    #self.cube_home_array = self.get_block_homes()
 
         # Calculate the IK for each of the cube home
         # positions and add them to an array of joint states
-        self.initialise_cube_home_JS()
-
+    #self.initialise_cube_home_JS()
+        
+        count = 0
         #TODO: what calls control_logic? -> need to call function here
         while not rospy.is_shutdown():    # maybe this can work?
-            self.control_logic()
+            #self.control_logic()
+            if count == 50:
+                self.test()
+                count=count+1
+            else:
+                count = count+1
             rospy.sleep(0.1)
-
+            
+    def test(self):
+        message = TargetJointStateTrajectory()
+        message.thetasCurrent = [-0.500, -0.500, -0.500, -0.5, -0.5]
+        message.thetasTarget = [0.500, 0.500,0.500, 0.5, 0.5]
+        message.motionDuration = 6
+        self.trajectory_pub.publish(message)
+        
     """ Initialise joint positions for cube homes """
     def initialise_cube_home_JS(self):
         cubeHeight = 10  # mm
@@ -313,7 +326,7 @@ class ControlLogic:
                 """ Receive cube pose from the camera """
                 self.ibisState = ControlState.CALCULATE_IK
 
-        else if self.ibisState is ControlState.CALCULATE_IK:
+        elif self.ibisState is ControlState.CALCULATE_IK:
         # case ControlState.CALCULATE_IK:
             if self.waiting_bool == False:
                 self.calculate_JS()
@@ -324,7 +337,7 @@ class ControlLogic:
                     self.targetJSReceived = False
                     self.waiting_bool = False
 
-        else if self.ibisState is ControlState.MOVE_OVER_CUBE:
+        elif self.ibisState is ControlState.MOVE_OVER_CUBE:
         # case ControlState.MOVE_OVER_CUBE:
             if self.waiting_bool ==  False:
                 self.move_over_cube()
@@ -335,9 +348,9 @@ class ControlLogic:
                     self.trajectoryComplete = False
                     self.waiting_bool = False
 
-        else if self.ibisState is ControlState.DOWN_PICKUP:
+        elif self.ibisState is ControlState.DOWN_PICKUP:
         # case ControlState.DOWN_PICKUP:
-            if self.waiting_bool == False
+            if self.waiting_bool == False:
                 self.down_pickup()
                 self.waiting_bool = True
             else:
@@ -346,7 +359,7 @@ class ControlLogic:
                     self.trajectoryComplete = False
                     self.waiting_bool = False
 
-        else if self.ibisState is ControlState.CLAW_PICKUP:
+        elif self.ibisState is ControlState.CLAW_PICKUP:
         # case ControlState.CLAW_PICKUP:
             if self.waiting_bool == False:
                 self.claw_pickup()
@@ -357,7 +370,7 @@ class ControlLogic:
                     self.trajectoryComplete = False
                     self.waiting_bool = False
 
-        else if self.ibisState is ControlState.UP_PICKUP:
+        elif self.ibisState is ControlState.UP_PICKUP:
         # case ControlState.UP_PICKUP:
             if self.waiting_bool == False:
                 self.up_pickup()
@@ -368,7 +381,7 @@ class ControlLogic:
                     self.trajectoryComplete = False
                     self.waiting_bool = False
 
-        else if self.ibisState is ControlState.CUBE_HOME:
+        elif self.ibisState is ControlState.CUBE_HOME:
         # case ControlState.CUBE_HOME:
             if self.waiting_bool == False:
                 self.cube_home()
@@ -379,7 +392,7 @@ class ControlLogic:
                     self.trajectoryComplete = False
                     self.waiting_bool = False
 
-        else if self.ibisState is ControlState.DOWN_DROP:
+        elif self.ibisState is ControlState.DOWN_DROP:
         # case ControlState.DOWN_DROP:
             if self.waiting_bool == False:
                 self.down_drop()
@@ -390,7 +403,7 @@ class ControlLogic:
                     self.trajectoryComplete = False
                     self.waiting_bool = False
 
-        else if self.ibisState is ControlState.CLAW_DROP:
+        elif self.ibisState is ControlState.CLAW_DROP:
         # case ControlState.CLAW_DROP:
             if self.waiting_bool == False:
                 self.claw_drop()
@@ -401,7 +414,7 @@ class ControlLogic:
                     self.trajectoryComplete = False
                     self.waiting_bool = False
 
-        else if self.ibisState is ControlState.UP_DROP:
+        elif self.ibisState is ControlState.UP_DROP:
         # case ControlState.UP_DROP:
             if self.waiting_bool == False:
                 self.up_drop()

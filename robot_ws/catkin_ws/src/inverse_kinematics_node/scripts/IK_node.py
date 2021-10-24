@@ -4,7 +4,6 @@ import numpy as np
 import rospy
 from enum import Enum
 from control_logic_node.msg import DesPosition, TargetJointState
-#import Colour
 
 class Colour(Enum):
     RED = 0
@@ -16,10 +15,10 @@ class Colour(Enum):
 class DesPosition:
     position = [0., 0., 0.]
     orientation_z = 0.
+
+class TargetJointState:
+    thetas = [0, 0, 0, 0, 0]
 """
-
-
-
 
 class IK_Ibis:
 
@@ -27,14 +26,14 @@ class IK_Ibis:
         position = np.array([received.position[0], received.position[1], received.position[2]])
         orientation = np.array([0, 0, received.orientation_z])
         targetJS = self.IKin(position, orientation)
-        targetJS.append(0.)
-        targetJS.append(0.)
-        #print(f"js = {self.to_degrees(targetJS)}")
+        targetJS.append(0.) ## ignore vertical postion
+        targetJS.append(0.) ## ignore claw open state
 
         msg = TargetJointState()
         msg.thetas = targetJS
-        rospy.logerr(targetJS)
+
         self.pub.publish(msg)
+
     """
     #Params for the inverse kinematics of the position of the arm
     self.armA_l = 185.   # mm length of armA
@@ -70,10 +69,6 @@ class IK_Ibis:
         
 
     def IKin(self, position, orientation):
-    
-    
-        #rotate0_3 = np.array([[1, 0, 0], [0, -1, 0], [0, 0, -1]])
-   
         # Rotate position to the offset frame for the slew joint
         rotate0_1 = np.array([[np.cos(self.thetaHomeOffset), np.sin(self.thetaHomeOffset), 0],
                               [-1 * np.sin(self.thetaHomeOffset), np.cos(self.thetaHomeOffset), 0],
@@ -87,7 +82,7 @@ class IK_Ibis:
         cosC = (self.armA_l ** 2 + self.armB_l ** 2 - c ** 2) / \
                (2 * self.armA_l * self.armB_l)  # cosine rule
         C = np.arccos(cosC)
-        theta1_2 = 1 * (np.pi - C)  + self.clawAngleOffset# rad
+        theta1_2 = 1 * (np.pi - C)  + self.clawAngleOffset # rad
 
         cosB = (c ** 2 + self.armA_l ** 2 - self.armB_l ** 2) / \
                (2 * c * self.armA_l)  # cosine rule
@@ -95,15 +90,8 @@ class IK_Ibis:
         theta1_1 = gamma + B  # rad
 
         # Rotate desired orientation to the claw frame
-        """
-        orientation_arm = -(orientation[2] -
-                           self.thetaHomeOffset -
-                           theta1_1 +
-                           theta1_2 -
-                           self.clawAngleOffset)
-        """
         orientation_arm = -1 * (orientation[2] - (theta1_1 + self.thetaHomeOffset + theta1_2 \
-                          + self.clawAngleOffset))
+                          + self.clawAngleOffset) + 25 * np.pi / 180) ## I don't know why 25 degrees is needed here
 
         # Limit theta3 angles to +/- pi/2
         theta1_3 = 0
@@ -201,13 +189,27 @@ class IK_Ibis:
             desPosition.position = position
             desPosition.orientation_z = 90 * np.pi/180
             rospy.logerr(desPosition)
-            #desPosition.position.append(0.)
             self.cb_calculate_ik(desPosition)
         rospy.logerr("finish test")
 
+    def test_orientation(self):
+        desPosition = DesPosition()
+        cube_height = self.z4  # mm
+        returnMsg = TargetJointState()
+
+        cube_position = [0, 190, cube_height]
+        orientations = [45, 135, -45, -135, 0, 90, -90]
+
+        for orientation in orientations:
+            desPosition.position = cube_position
+            desPosition.orientation_z = orientation * np.pi / 180
+            returnMsg = self.cb_calculate_ik(desPosition)
+            print(f"claw angle = {returnMsg.thetas[2] * 180 / np.pi}")
+
+
 if __name__ == '__main__':
-    #ibis = IK_Ibis()
-    #ibis.test_ik()
+    ####ibis = IK_Ibis()
+    ####ibis.test_orientation()
 
     try:
         IK_Ibis()

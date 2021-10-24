@@ -3,7 +3,7 @@ import rospy
 import numpy as np
 import modern_robotics as mr
 from control_logic_node.msg import CubePose, ClawPose, CurrentJointState
-""" Helper functions"""
+
 
 # 0, -7.504, 313.124 -> 0, 190, 10
 # -150, 210.878, 213.077 -> -50, -150, 0
@@ -105,25 +105,6 @@ class FK_Ibis:
         for coordinate in range(2):
             value = T0_5[coordinate][3]
             
-        """   
-            # check the positive range
-            if value >= 0:
-                # Check the lower range
-                if value < self.workspace_lower_limit[coordinate]:
-                    value = self.workspace_lower_limit[coordinate]
-                # Check the upper range
-                elif value > self.workspace_upper_limit[coordinate]:
-                    value = self.workspace_upper_limit[coordinate]
-            # check the positive range
-            elif value < 0:
-                # Check the lower range
-                if value > -self.workspace_lower_limit[coordinate]:
-                    value = -self.workspace_lower_limit[coordinate]
-                # Check the upper range
-                elif value < -self.workspace_upper_limit[coordinate]:
-                    value = -self.workspace_upper_limit[coordinate]
-            value = T0_5[coordinate][3]
-        """
         # Ensure that the vertical position is within the allowable workspace
         if T0_5[2][3] < self.workspace_lower_limit[2]:
             T0_5[2][3] = self.workspace_lower_limit[2]
@@ -206,30 +187,6 @@ class FK_Ibis:
         self.T1_6 = mr.RpToTrans(self.R16, self.p_6 - np.array([0, 0, self.z1]))  # Camera pose relative to frame {1}
         self.T0_6 = self.T0_1 @ self.T1_6
     
-    """
-    def test_camera_to_origin(self):
-        self.thetas = np.array([0., 45 * np.pi / 180, 0., 0., 0.])
-
-        msg = CubePose()
-
-        msg.position = [0, -7.5, 313, 0]
-        print(f"Camera cube position = {msg.position}")
-        cubePose = self.cb_calculate_cube_pose(msg)
-        print(f"Origin cube position = {cubePose.position}")
-        print(f"Origin cube position should be [0, 190, 10, ]\n")
-
-        msg.position = [-150, 211, 213, 0]
-        print(f"Camera cube position = {msg.position}")
-        cubePose = self.cb_calculate_cube_pose(msg)
-        print(f"Origin cube position = {cubePose.position}")
-        print(f"Origin cube position should be [-50, -150, 0]\n")
-
-        msg.position= [100, 88.2, 219, 0]
-        print(f"Camera cube position = {msg.position}")
-        cubePose = self.cb_calculate_cube_pose(msg)
-        print(f"Origin cube position = {cubePose.position}")
-        print(f"Origin cube position should be [100, 62.2, 50]\n")
-    """
 
 if __name__ == '__main__':
     ##np.set_printoptions(precision=2, suppress=True)

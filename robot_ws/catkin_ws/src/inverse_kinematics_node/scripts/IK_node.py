@@ -13,14 +13,6 @@ class Colour(Enum):
     BLUE = 2
     YELLOW = 3
 
-"""
-class DesPosition:
-    position = [0., 0., 0.]
-    orientation_z = 0.
-
-class TargetJointState:
-    thetas = [0, 0, 0, 0, 0]
-"""
 
 class IK_Ibis:
 
@@ -37,17 +29,7 @@ class IK_Ibis:
 
         self.pub.publish(msg)
 
-    """
-    #Params for the inverse kinematics of the position of the arm
-    self.armA_l = 185.   # mm length of armA
-    armB_l = 140.   # mm length of armB
-    zHome = 100.    # mm home height of claw
-    thetas = np.array([0., 0., 0., 0., zHome])          # theta[0] is not a real joint
-    thetaHomeOffset = (157.33 + 90) * (np.pi / 180)     # rad - this is the home angle of the arm relative to the x axis
-    clawAngleOffset = -15 * (np.pi / 180)               # rad - offset angle for claw relative to armB
-    PITCH = 1.
-    z4 = 10     # mm height of claw# For the vertical axis, joint 4
-    """
+
     def __init__(self):
         # Params for the inverse kinematics of the position of the arm
         self.armA_l = 185.  # mm length of armA
@@ -93,12 +75,9 @@ class IK_Ibis:
         B = np.arccos(cosB)
         theta1_1 = gamma + B  # rad
 
-        # Rotate desired orientation to the claw frame
-        #orientation_arm = -1 * (orientation[2] - (theta1_1 + self.thetaHomeOffset + theta1_2 \
-        #                  + self.clawAngleOffset) + 45 * np.pi / 180) ## I don't know why 25 degrees is needed here
                           
-        R0_1 = self.rot(np.array([0, 0, 1]), theta1_1 + self.thetaHomeOffset)
-        R1_2 = self.rot(np.array([0, 0, 1]), theta1_2)
+        R0_1 = self.rot(np.array([0, 0, 1]), theta1_1 + self.thetaHomeOffset+45*np.pi/180)
+        R1_2 = self.rot(np.array([0, 0, 1]), -theta1_2)
         R2_3_A = self.rot(np.array([0, 0, 1]), self.clawAngleOffset)
         R2_3_B = self.rot(np.array([0, 1, 0]), np.pi)
 
@@ -130,16 +109,6 @@ class IK_Ibis:
             rotated = rotated * matrix
         return rotated
     
-    """ Offset theta1 for the slew axis """
-    #FIXME: nothing calls this function
-    def slew_angle(self, theta_home_offset, theta1):
-        new_angle = theta1 - theta_home_offset
-
-        if new_angle > np.pi:
-            new_angle = new_angle - 2 * np.pi
-        elif new_angle < -np.pi:
-            new_angle = new_angle + 2 * np.pi
-        return new_angle
 
     # change angles to degrees
     def to_degrees(self, angles):
@@ -148,96 +117,10 @@ class IK_Ibis:
 
         return angles
 
-    #FIXME: nothing caalls this function
-    def cube_home_analytical(self):
-        print("Initialise cube angles using analytical method")
-        cube_height = self.z4  # mm
-        cube_positions = np.array([
-            [[-125, -25, cube_height],
-             [-125, -75, cube_height],
-             [-175, -75, cube_height],
-             [-175, -25, cube_height]],
-            [[-25, -125, cube_height],
-             [-25, -175, cube_height],
-             [-75, -175, cube_height],
-             [-75, -125, cube_height]],
-            [[75, -125, cube_height],
-             [75, -175, cube_height],
-             [25, -175, cube_height],
-             [25, -125, cube_height]],
-            [[175, -25, cube_height],
-             [175, -75, cube_height],
-             [125, -75, cube_height],
-             [125, -25, cube_height]],
-        ])
-
-        colour = 0
-        colours = 4
-        positions = 4
-        cube_home_angles = np.array(np.zeros((colours, positions, 4)))
-        for colour in range(colours):
-            print(f"Colour {colour}")
-
-            for position in range(positions):
-                theta1, theta2, theta3 = self.IKin(cube_positions[colour][position], 0)  # zero angle
-                thetas_end = np.array([theta1, theta2, theta3, 0])
-                cube_home_angles[colour][position] = thetas_end
-                print(f"position = {cube_positions[colour][position]}")
-                print(f"\tarm angles = {self.to_degrees(thetas_end)}")
-                position = position + 1
-
-            print(" ---- ")
-
-        return cube_home_angles
-
-    def test_ik(self):
-        rospy.logerr("start of test")
-        desPosition = DesPosition()
-        cube_height = self.z4  # mm
-  
-        cube_positions = [[0,190, cube_height]]
-            #[-125, -25, cube_height],
-            # [-125, -75, cube_height],
-            # [-175, -75, cube_height],
-            # [-175, -25, cube_height],
-            #[-25, -125, cube_height],
-            # [-25, -175, cube_height],
-            # [-75, -175, cube_height],
-            # [-75, -125, cube_height],
-            #[75, -125, cube_height],
-            # [75, -175, cube_height],
-            # [25, -175, cube_height],
-            # [25, -125, cube_height],
-            #[175, -25, cube_height],
-            # [175, -75, cube_height],
-            # [125, -75, cube_height],
-            # [125, -25, cube_height]]
-
-        for position in cube_positions:
-            desPosition.position = position
-            desPosition.orientation_z = 90 * np.pi/180
-            rospy.logerr(desPosition)
-            self.cb_calculate_ik(desPosition)
-        rospy.logerr("finish test")
-
-    def test_orientation(self):
-        desPosition = DesPosition()
-        cube_height = self.z4  # mm
-        returnMsg = TargetJointState()
-
-        cube_position = [0, 190, cube_height]
-        orientations = [45, 135, -45, -135, 0, 90, -90]
-
-        for orientation in orientations:
-            desPosition.position = cube_position
-            desPosition.orientation_z = orientation * np.pi / 180
-            returnMsg = self.cb_calculate_ik(desPosition)
-            print(f"claw angle = {returnMsg.thetas[2] * 180 / np.pi}")
+   
 
 
 if __name__ == '__main__':
-    ####ibis = IK_Ibis()
-    ####ibis.test_orientation()
 
     try:
         IK_Ibis()

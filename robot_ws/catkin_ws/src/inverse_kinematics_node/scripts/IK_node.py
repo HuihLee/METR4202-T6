@@ -23,6 +23,7 @@ class TargetJointState:
 class IK_Ibis:
 
     def cb_calculate_ik(self, received):
+        rospy.logerr(received)
         position = np.array([received.position[0], received.position[1], received.position[2]])
         orientation = np.array([0, 0, received.orientation_z])
         targetJS = self.IKin(position, orientation)
@@ -51,7 +52,7 @@ class IK_Ibis:
         self.armB_l = 140.  # mm length of armB
         self.zHome = 100.  # mm home height of claw
         self.thetas = np.array([0., 0., 0., 0., self.zHome])  # theta[0] is not a real joint
-        self.thetaHomeOffset = (90) * ( #157.33
+        self.thetaHomeOffset = (56) * ( #157.33
                     np.pi / 180)  # rad - this is the home angle of the arm relative to the x axis
         self.clawAngleOffset = -15 * (np.pi / 180)  # rad - offset angle for claw relative to armB
         self.PITCH = 1.
@@ -92,7 +93,7 @@ class IK_Ibis:
 
         # Rotate desired orientation to the claw frame
         orientation_arm = -1 * (orientation[2] - (theta1_1 + self.thetaHomeOffset + theta1_2 \
-                          + self.clawAngleOffset) + 25 * np.pi / 180) ## I don't know why 25 degrees is needed here
+                          + self.clawAngleOffset) + 45 * np.pi / 180) ## I don't know why 25 degrees is needed here
 
         # Limit theta3 angles to +/- pi/2
         theta1_3 = 0

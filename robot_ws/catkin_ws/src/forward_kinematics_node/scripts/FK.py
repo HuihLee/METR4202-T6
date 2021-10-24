@@ -71,7 +71,7 @@ class FK_Ibis:
         cubePose.position = [self.T0_5[0][3],
                              self.T0_5[1][3],
                              self.T0_5[2][3],
-                             msg.position[3] + np.pi/4 - self.theta1_home_offset - self.thetas[1]] # TODO fix orientation
+                             msg.position[3]]# + np.pi/4 - self.theta1_home_offset - self.thetas[1]] # TODO fix orientation
         cubePose.colour = msg.colour
         rospy.logerr(cubePose)
         self.cubePosePub.publish(cubePose)
@@ -167,7 +167,7 @@ class FK_Ibis:
 
     def initialise_robot_parameters(self):
         """ Model parameters """
-        self.theta1_home_offset = (90) * (
+        self.theta1_home_offset = (56) * (
                 np.pi / 180)  # rad - this is the home angle of the arm relative to the frame {1} x axis
         self.claw_angle_offset = -15 * (np.pi / 180)  # rad - offset angle for claw relative to armB {2}
         self.z1 = 114.  # mm height of the slew joint {1} from origin

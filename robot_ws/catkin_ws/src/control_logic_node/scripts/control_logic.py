@@ -52,7 +52,7 @@ class ControlLogic:
     targetJSReceived = False  # No joint states have been received
 
     # Default joint positions
-    CLAW_UP_Z = 1.3  # rad
+    CLAW_UP_Z = 1.4  # rad
     CLAW_DOWN_Z = -0.6  # rad
     CLAW_OPEN = 3.  # rad
     CLAW_CLOSE = 0.  # rad
@@ -61,7 +61,7 @@ class ControlLogic:
     cubePosition = [0., 0., 0., 0.]  # ([x, y, z, theta_z])
     currentJS = [0., 0., 0., 0., 0.]  # ([theta1, theta2, theta3, theta4, theta5])
     targetJS = [0., 0., 0., 0., 0.]  # ([theta1, theta2, theta3, theta4, theta5])
-    searching_JS = [np.pi/4, 0, 0, CLAW_UP_Z, CLAW_OPEN]
+    searching_JS = [(90 - 56) * np.pi/180 + np.pi/4, 0, 0, CLAW_UP_Z, CLAW_OPEN]
     cube_home_JS = [[[0, 0, 0, 0, 0], [0, 0, 0, 0, 0], [0, 0, 0, 0, 0], [0, 0, 0, 0, 0]],  # Position 0
                     [[0, 0, 0, 0, 0], [0, 0, 0, 0, 0], [0, 0, 0, 0, 0], [0, 0, 0, 0, 0]],  # Position 1
                     [[0, 0, 0, 0, 0], [0, 0, 0, 0, 0], [0, 0, 0, 0, 0], [0, 0, 0, 0, 0]],  # Position 2
@@ -73,10 +73,10 @@ class ControlLogic:
 
     # Durations of each movement
     OVER_CUBE_TIME = 2.  # sec
-    UP_DOWN_TIME = 1.  # sec
-    CLAW_OPEN_CLOSE_TIME = 0.2  # sec
-    CUBE_HOME_TIME = 6.  # sec
-    MOVE_HOME_TIME = 6.  # sec
+    UP_DOWN_TIME = 0.3  # sec
+    CLAW_OPEN_CLOSE_TIME = 0.1  # sec
+    CUBE_HOME_TIME = 5.  # sec
+    MOVE_HOME_TIME = 5.  # sec
 
     # Test positions
     # TODO delete this before submissions
@@ -104,6 +104,7 @@ class ControlLogic:
     def cb_cubePose(self, msg):
         rospy.logerr("got cube pose")
         self.cubePosition = msg.position
+        rospy.logerr(msg.position)
         self.cubeColour = Colour[msg.colour]
         self.cubeFound = True
 
@@ -160,11 +161,12 @@ class ControlLogic:
 
         # Calculate the IK for each of the cube home
         # positions and add them to an array of joint states
-        #self.initialise_cube_home_JS()
+        rospy.sleep(2)  # give everything time to init
+        self.initialise_cube_home_JS()
         rospy.logerr("init cube home...")
         count = 0
-        rospy.sleep(2)  # give everything time to init
         
+        rospy.sleep(2)  # give everything time to init
         #msg = DesPosition()
 
         #msg.position = [-55, 162, 20]
@@ -194,7 +196,7 @@ class ControlLogic:
 
     def test_position(self):
         # Calculate the required joint positions
-        self.cubePosition = [0, 190, 0]
+        self.cubePosition = [0, 190, 0, 0]
         self.calculate_JS()
 
         rospy.sleep(1)
@@ -262,6 +264,7 @@ class ControlLogic:
     """ Initialise joint positions for cube homes """
 
     def initialise_cube_home_JS(self):
+        rospy.logerr("start init cube home")
         cubeHeight = 10  # mm
         cubePositions = [
             [[-125, -25, cubeHeight],
@@ -282,18 +285,19 @@ class ControlLogic:
              [125, -25, cubeHeight]],
         ]
         msg = DesPosition()
-        rate = rospy.Rate(100)
         for colour_bin in range(4):
             for position in range(4):
                 msg.position = cubePositions[colour_bin][position]
                 msg.orientation_z = 0
+                rospy.logerr(msg)
 
                 # Calculate the joint state
+                rospy.logerr("getting cube home...")
                 self.IK_pub.publish(msg)
                 while self.targetJSReceived is False:
                     # do nothing
-                    rate.sleep()
-
+                    rospy.sleep(0.05)#rate.sleep()
+                rospy.logerr("got cube position...")
                 # Populate the joint state array
                 self.cube_home_JS[colour_bin][position] = self.targetJS
                 self.targetJSReceived = False
@@ -404,7 +408,7 @@ class ControlLogic:
         thetasTarget = [self.targetJS[0],
                         self.targetJS[1],
                         self.targetJS[2],
-                        self.CLAW_DOWN_Z,
+                        self.CLAW_UP_Z,
                         self.CLAW_OPEN]
         self.move(thetasTarget, self.CLAW_OPEN_CLOSE_TIME)
 

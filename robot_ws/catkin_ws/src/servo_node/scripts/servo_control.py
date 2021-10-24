@@ -20,7 +20,7 @@ class Servo_Controller:
     # Desired joint states for all the servos
     def cb_desired_js(self, data):
         self.pos.position = [data.thetas[0], data.thetas[1], data.thetas[2], data.thetas[3]]
-        self.pos.velocity = [0.50, 1.00, 1.00, 1.00]
+        self.pos.velocity = [1.00, 1.00, 1.00, 1.00]
         # Sets the position of the SG90 servo
         self.SG90 = data.thetas[4]
 

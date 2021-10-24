@@ -22,9 +22,11 @@ class Traj:
         thetaEnd = np.array([msg.thetasTarget[0], msg.thetasTarget[1], msg.thetasTarget[2], msg.thetasTarget[3], msg.thetasTarget[4]])
         duration = msg.motionDuration
 
-        dt = 0.05
+        dt = 0.1
         rate = rospy.Rate(1 / dt)
         N = ceil(duration/dt)
+        if N < 2:
+            N = 2
         trajectory = mr.JointTrajectory(thetaStart, thetaEnd, Tf, N, method)
         
         for way_point in trajectory:

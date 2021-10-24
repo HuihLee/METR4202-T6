@@ -1,4 +1,6 @@
 #!/usr/bin/env python3
+
+# all required imports
 import rospy
 import RPi.GPIO as GPIO
 import pigpio
@@ -9,12 +11,16 @@ from std_msgs.msg import String
 from control_logic_node.msg import CurrentJointState, DesJointState
 from sensor_msgs.msg import JointState
 
+# all global variables
 ROBOT_FREQ = 10
 up_threshold = 1.3
 down_threshold = -0.6
 
 SERVO_PIN = 13
 
+"""
+Class used to control dynamixel servos and SG90 servo. Subsribes/publishes to dynamixel interface and subscribes to trajectory node. Publishes current angle state for multiple nodes
+"""
 class Servo_Controller:
 
     # Desired joint states for all the servos
@@ -46,26 +52,7 @@ class Servo_Controller:
             self.prev_SG90 = self.SG90
             return False
 
-
-    def test(self):
-        print("in test\n")
-        self.testPos.name = ["joint_1", "joint_2","joint_3", "joint_4"]
-         
-        self.testPos.position = [0.000, 0.500, 0.5, self.head_value]
-        if self.head_value == 1.3:
-            self.up = False
-        if self.head_value == -0.7:
-            self.up = True
-
-        if self.up is True:
-            self.head_value = self.head_value + 0.1
-        else:
-            self.head_value = self.head_value - 0.1
-       # Sets the position of the SG90 servo
-        #self.testSG90 = 1pwm.set_PWM_dutycycle(servo, 0)
-
-        print("end of test\n")
-        
+    # New code utilising pigpio to minimise SG90 twitching    
     def stop_pwm_twitching(self):
         if self.SG90 != self.prev_SG90: # change pose
             if self.SG90 > 1.57:       
@@ -76,17 +63,12 @@ class Servo_Controller:
             
         self.prev_SG90 = self.SG90
 
-
+    # Init Servo controller node
     def __init__(self):
+        # init node
         GPIO.setwarnings(False)
         rospy.init_node('actuator_controller', anonymous=False, log_level=rospy.DEBUG)
         rate = rospy.Rate(10)
-
-        self.pos = JointState()
-        self.pos.name = ["joint_1", "joint_2", "joint_3", "joint_4"]
-
-        self.testPos = JointState()
-        self.currentJointPos = CurrentJointState()
 
         # Comms with Dynamixels
         self.dynamixel_pub = rospy.Publisher("desired_joint_states", JointState, queue_size=10)
@@ -97,25 +79,22 @@ class Servo_Controller:
         
         # Comms with Control Logic and Forward Kinematics
         self.current_joint_pub = rospy.Publisher("Actuator_CurrentJS", CurrentJointState, queue_size=10)
-
+        
+        # define message for subscribing desired angle
+        self.pos = JointState()
+        self.pos.name = ["joint_1", "joint_2", "joint_3", "joint_4"]
+        
+        # Subscribe to dynamixel values
+        self.currentJointPos = CurrentJointState()
+        
         # Duty cycle to close the gripper
         self.closePose = 1700#8.1     #1620
         # Duty cycle to open the gripper
         self.openPose = 1440#7.2    #1440
         
-        
         self.SG90 = 1
         self.prev_SG90 = 1
-        """
-        # Configure the Pi to use pin names (i.e. BCM) and allocate I/O
-        GPIO.setmode(GPIO.BCM)
-        GPIO.setup(13, GPIO.OUT)
-
-        # Create PWM channel on pin 13 with a frequency of 50Hz
-        self.pwm_servo = GPIO.PWM(13, 50)
-        self.pwm_servo.start(self.openPose) # Duty cycle of 7.2 is the gripper open pose
-        #self.pwm_servo.stop()
-        """
+       
         # https://ben.akrin.com/?p=9158
         self.pwm = pigpio.pi() 
         self.pwm.set_mode(SERVO_PIN, pigpio.OUTPUT)
@@ -124,27 +103,22 @@ class Servo_Controller:
         self.pwm.set_servo_pulsewidth(SERVO_PIN, self.openPose)
         
         while not rospy.is_shutdown():
-            #if self.gripperControl(self.SG90)==self.closePose:
-            #    pwm_servo.ChangeDutyCycle(self.closePose)
-            #if self.gripperControl(self.SG90) == True:
-            #    pwm_servo.ChangeDutyCycle(self.SG90)
-            #    rospy.loginfo("changing duty cycle")
+            
             self.stop_pwm_twitching()
 
             self.dynamixel_pub.publish(self.pos)
             self.current_joint_pub.publish(self.currentJointPos)
             rate.sleep()
             
-            
+        # If ros shutdowns, stop pwm 
         self.pwm.set_PWM_dutycycle(SERVO_PIN, 0)
         self.pwm.set_PWM_frequency(SERVO_PIN, 0 )
 
+# start servo controller node
 if __name__ == "__main__":
     try:
         Servo_Controller()
-        #rospy.spin()
     except rospy.ROSInterruptException:
-        #GPIO.cleanup()
         Servo_Controller.pwm.set_PWM_dutycycle(SERVO_PIN, 0)
         Servo_Controller.pwm.set_PWM_frequency(SERVO_PIN, 0 )
         pass

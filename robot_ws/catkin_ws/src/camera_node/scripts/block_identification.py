@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 
+# All required imports
 import rospy
 from std_msgs.msg import String
 from control_logic_node.msg import CubePose
@@ -10,6 +11,7 @@ from vision_msgs.msg import Detection2D, Detection2DArray, ObjectHypothesisWithP
 
 import math
 
+# Global variables used throughout code
 ROBOT_FREQ = 100
 
 cam_width = 1280
@@ -23,19 +25,24 @@ UNKNOWN =   4
 
 MOVEMENT_THRESHOLD = 0.002
 
+"""
+Class used to operate camera and detect blocks and their colour.
+Will publish the cubes x,y,z in the camera's frame and orientation in the z-axis
+"""
 class Camera:
-
+    
+    # Callback after fiducial has been detected
     def cd_fiducial(self, data):
         block = data.detections
 
-        if len(block) > 0:
-        #try:
+        if len(block) > 0:  # check if data has valid information
+        
             # get position
             x = block[0].results[0].pose.pose.position.x
             y = block[0].results[0].pose.pose.position.y
             z = block[0].results[0].pose.pose.position.z
 
-            if self.check_block_still(x, y):
+            if self.check_block_still(x, y):    # check if the block is still moving 
                 # get rotation
                 x_quat = block[0].results[0].pose.pose.orientation.x
                 y_quat = block[0].results[0].pose.pose.orientation.y
@@ -44,22 +51,13 @@ class Camera:
 
                 t1 = 2.0 * (w_quat * z_quat + x_quat * y_quat)
                 t2 = 1.0 - 2.0 * (y_quat * y_quat + z_quat * z_quat)
-                yaw = abs(math.atan2(t1, t2))
-                
-                """
-                if yaw > math.pi:
-                    yaw = yaw - math.pi
-
-                if yaw > math.pi/2:
-                    yaw = yaw - math.pi/2
-                """
+                yaw = abs(math.atan2(t1, t2))   # rotation in base z-axis
+              
                 angle = yaw# * 180/math.pi
 
                 new_y = max(self.y0, self.y1, self.y2, self.y3)+20
                 new_x = (self.x0 + self.x1 + self.x2 + self.x3)/4
-                # roi_y = (self.y2+self.y3)/2 + 15
                 
-
                 colour = self.get_colour(10, 10, new_x, new_y, self.image)
             
                 # create message 
@@ -70,29 +68,31 @@ class Camera:
                 message.position[3] = yaw            
                 message.colour = colour
                 
-                if colour !="UNKNOWN":
-                # print(colour, x, y, z)
+                if colour !="UNKNOWN":  # if the colour is unknown dont publish       
                     self.camera_pub.publish(message)
-                    
-            #except:
-            #    pass
-
+                   
+    
+    # determine if the block is moving or at stand still
     def check_block_still(self, x, y):
+        # check absolute movement
         movement_x = abs(self.prev_x_pos - x)
         movement_y = abs(self.prev_y_pos - y)
         self.prev_x_pos = x
         self.prev_y_pos = y
-
+        
+        # if block is moving within threshold, block is 'still'
         if movement_x < MOVEMENT_THRESHOLD and movement_y < MOVEMENT_THRESHOLD:
             # block is still
             return True
         else:
             return False
-
+    
+    # Callback t0 get the points of found fiducial to determine colour
     def cb_colour(self, data):
         block = data.fiducials
-        if len(block) > 0:
-        # print(data)
+        
+        if len(block) > 0:  # check if data packet is valid
+        
             self.x0 = round(block[0].x0)
             self.x1 = round(block[0].x1)
             self.x2 = round(block[0].x2)
@@ -102,16 +102,17 @@ class Camera:
             self.y2 = round(block[0].y2)
             self.y3 = round(block[0].y3)
 
-
+    # Save image to determine colour of pixel space if fiducial is found later
     def cb_image(self, data):
         self.image = data.data
         
-
+    # Calculate the colour of roi
     def get_colour(self, width, height, x, y, image):
 
         X = x - (width / 2)
         Y = y + (height/2)
-
+        
+        # pixel space is not valid
         if X < 0 or Y < 0 or X+width > cam_width or Y-height < 0:
             rospy.logrr("Colour detection ROI out of bounds")
 
@@ -128,7 +129,8 @@ class Camera:
                 R = R + image[rgb_pixel + 2]
                 G = G + image[rgb_pixel + 1]
                 B = B + image[rgb_pixel]
-
+        
+        # calculate hue angle of roi
         R = R / (width*height)
         G = G / (width*height)
         B = B / (width*height)
@@ -139,10 +141,7 @@ class Camera:
 
         max_val = max(r, g, b)
         min_val = min(r, g, b)
-        # if (max_val - min_val < 2):
-        #     print("bright light?")
-        #     return None
-
+      
         if (r >= g and r >= b):
             hue = (g-b)/(max_val - min_val)
         elif (g >= b and g >= r):
@@ -169,7 +168,8 @@ class Camera:
             return "BLUE"
         else:
             return "UNKNOWN"
-
+    
+    # Initialise camera_node
     def __init__(self):
 
         rospy.init_node('Camera', anonymous=False, log_level=rospy.DEBUG)
@@ -182,7 +182,8 @@ class Camera:
         rospy.Subscriber("fiducial_transforms", Detection2DArray, self.cd_fiducial)
         rospy.Subscriber("fiducial_vertices", FiducialArray, self.cb_colour)
         rospy.Subscriber("/ximea_cam/image_raw", Image, self.cb_image)
-        
+           
+        # init points of fiducial in pixel space
         self.x0 = None
         self.x1 = None
         self.x2 = None
@@ -191,7 +192,8 @@ class Camera:
         self.y1 = None
         self.y2 = None
         self.y3 = None
-
+        
+        # init values used to check if at stand still
         self.prev_x_pos = 0
         self.prev_y_pos =0
 
@@ -199,6 +201,7 @@ class Camera:
         
         rospy.sleep(2)  # give system time to init everything
 
+# Start camera_node
 if __name__ == "__main__":
     try:
         Camera()

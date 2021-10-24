@@ -61,15 +61,11 @@ class FK_Ibis:
    
         self.T6_5 = np.concatenate((R6_5, cube6_5), axis=1)
         self.T6_5 = np.append(self.T6_5, [[0, 0, 0, 1]], axis=0)
-        rospy.logerr("\nT6_5")
-        rospy.logerr(self.T6_5)
+    
 
         # Transform the pose of the cube from the camera to the origin frame
         self.T0_5 = self.T0_6 @ self.T6_5
-        rospy.logerr("\nT0_6")
-        rospy.logerr(self.T0_6)
-        rospy.logerr("\nT0_5")
-        rospy.logerr(self.T0_5)
+  
 
         cubePose = CubePose()
         cubePose.position = [self.T0_5[0][3],
@@ -79,7 +75,7 @@ class FK_Ibis:
         cubePose.colour = msg.colour
         rospy.logerr(cubePose)
         self.cubePosePub.publish(cubePose)
-        return cubePose
+        #return cubePose
 
 
     def apply_workspace_limits(self, position):
@@ -145,6 +141,7 @@ class FK_Ibis:
         ## Claw pose ##
         # Initialize node
         rospy.init_node('Forward_Kinematics', anonymous=True, log_level=rospy.DEBUG)
+        rate = rospy.Rate(10)
         
         # Create publisher
         #self.clawPosePub = rospy.Publisher('FK_ClawPose', ClawPose, queue_size=1) Not being used?

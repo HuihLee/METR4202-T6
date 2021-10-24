@@ -19,7 +19,7 @@
     <arg name="camera" default="/ximea_cam"/>
     <arg name="image" default="image_raw"/>
     <arg name="transport" default="compressed"/>
-    <arg name="fiducial_len" default="0.03"/>
+    <arg name="fiducial_len" default="0.032"/>
     <arg name="dictionary" default="16"/>
     <arg name="do_pose_estimation" default="true"/>
     <!-- If vis_msgs set to true, pose estimation will be published with ROS standard vision_msgs -->
@@ -45,7 +45,7 @@
     </node>    
 
 <!-- Launch Debugging/checking camera is in focus node -->
-    <node pkg="rqt_image_view" type = "rqt_image_view" name="display_camera"/>
+    <!-- <node pkg="rqt_image_view" type = "rqt_image_view" name="display_camera"/> -->
 
 <!-- Launch script that determines the colour and ID of blocks -->
     <node pkg = "camera_node" type = "block_identification.py" name = "identify_blocks_node" output="screen"/>

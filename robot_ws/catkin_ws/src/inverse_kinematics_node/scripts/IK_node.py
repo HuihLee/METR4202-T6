@@ -65,6 +65,7 @@ class IK_Ibis:
         # Subscribe
         rospy.Subscriber('CL_Position', DesPosition, self.cb_calculate_ik)
         
+        rate = rospy.Rate(10)
         #self.test_ik()
         
 

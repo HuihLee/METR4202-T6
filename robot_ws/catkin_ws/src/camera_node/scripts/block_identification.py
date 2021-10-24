@@ -29,52 +29,53 @@ class Camera:
         block = data.detections
 
         if len(block) > 0:
-            try:
-                # get position
-                x = block[0].results[0].pose.pose.position.x
-                y = block[0].results[0].pose.pose.position.y
-                z = block[0].results[0].pose.pose.position.z
+        #try:
+            # get position
+            x = block[0].results[0].pose.pose.position.x
+            y = block[0].results[0].pose.pose.position.y
+            z = block[0].results[0].pose.pose.position.z
 
-                if self.check_block_still(x, y):
-                    # get rotation
-                    x_quat = block[0].results[0].pose.pose.orientation.x
-                    y_quat = block[0].results[0].pose.pose.orientation.y
-                    z_quat = block[0].results[0].pose.pose.orientation.z
-                    w_quat = block[0].results[0].pose.pose.orientation.w
+            if self.check_block_still(x, y):
+                # get rotation
+                x_quat = block[0].results[0].pose.pose.orientation.x
+                y_quat = block[0].results[0].pose.pose.orientation.y
+                z_quat = block[0].results[0].pose.pose.orientation.z
+                w_quat = block[0].results[0].pose.pose.orientation.w
 
-                    t1 = 2.0 * (w_quat * z_quat + x_quat * y_quat)
-                    t2 = 1.0 - 2.0 * (y_quat * y_quat + z_quat * z_quat)
-                    yaw = abs(math.atan2(t1, t2))
-                    
-                    """
-                    if yaw > math.pi:
-                        yaw = yaw - math.pi
-
-                    if yaw > math.pi/2:
-                        yaw = yaw - math.pi/2
-                    """
-                    angle = yaw# * 180/math.pi
-
-                    new_y = max(self.y0, self.y1, self.y2, self.y3)+20
-                    new_x = (self.x0 + self.x1 + self.x2 + self.x3)/4
-                    # roi_y = (self.y2+self.y3)/2 + 15
-                    
-
-                    colour = self.get_colour(10, 10, new_x, new_y, self.image)
+                t1 = 2.0 * (w_quat * z_quat + x_quat * y_quat)
+                t2 = 1.0 - 2.0 * (y_quat * y_quat + z_quat * z_quat)
+                yaw = abs(math.atan2(t1, t2))
                 
-                    # create message 
-                    message = CubePose()
-                    message.position[0] = x
-                    message.position[1] = y
-                    message.position[2] = z
-                    message.position[3] = yaw            
-                    message.colour = colour
+                """
+                if yaw > math.pi:
+                    yaw = yaw - math.pi
 
-                    # print(colour, x, y, z)
+                if yaw > math.pi/2:
+                    yaw = yaw - math.pi/2
+                """
+                angle = yaw# * 180/math.pi
+
+                new_y = max(self.y0, self.y1, self.y2, self.y3)+20
+                new_x = (self.x0 + self.x1 + self.x2 + self.x3)/4
+                # roi_y = (self.y2+self.y3)/2 + 15
+                
+
+                colour = self.get_colour(10, 10, new_x, new_y, self.image)
+            
+                # create message 
+                message = CubePose()
+                message.position[0] = x*1000
+                message.position[1] = y*1000
+                message.position[2] = z*1000
+                message.position[3] = yaw            
+                message.colour = colour
+                
+                if colour is not "UNKNOWN":
+                # print(colour, x, y, z)
                     self.camera_pub.publish(message)
                     
-            except:
-                pass
+            #except:
+            #    pass
 
     def check_block_still(self, x, y):
         movement_x = abs(self.prev_x_pos - x)
@@ -172,7 +173,7 @@ class Camera:
     def __init__(self):
 
         rospy.init_node('Camera', anonymous=False, log_level=rospy.DEBUG)
-        rate = rospy.Rate(ROBOT_FREQ)
+        rate = rospy.Rate(10)
 
         # Comms with rest of robot
         self.camera_pub = rospy.Publisher("Camera_Pose", CubePose, queue_size=10)
@@ -191,8 +192,8 @@ class Camera:
         self.y2 = None
         self.y3 = None
 
-        self.prev_x_pos = None
-        self.prev_y_pos = None
+        self.prev_x_pos = 0
+        self.prev_y_pos =0
 
         self.image = None
         

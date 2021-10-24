@@ -23,19 +23,24 @@ class Servo_Controller:
     # Current dynamixel joint states
     def cb_current_js(self, data):
         if data is not None:
-            joint1 = data.position[0]
-            joint2 = data.position[1]
-            joint3 = data.position[2]
-            joint4 = data.position[3]
+            joint1 = data.position[3]
+            joint2 = data.position[2]
+            joint3 = data.position[1]
+            joint4 = data.position[0]
             self.currentJointPos = [joint1, joint2, joint3, joint4, self.SG90]
 
     # Closes the gripper when the threshold pi/2 is passed
     def gripperControl(self, rad):
-        if rad < 1.57:
-            self.duty_cycle = self.openPose
+        if self.SG90 != self.prev_SG90:
+            if rad < 1.57:
+                self.duty_cycle = self.openPose
+            else:
+                self.duty_cycle = self.closePose
+            self.prev_SG90 = self.SG90
+            return True
         else:
-            self.duty_cycle = self.closePose
-        return self.duty_cycle
+            self.prev_SG90 = self.SG90
+            return False
 
 
     def test(self):
@@ -55,12 +60,22 @@ class Servo_Controller:
        # Sets the position of the SG90 servo
         self.testSG90 = 1
         print("end of test\n")
+        
+    def stop_pwm_twitching(self):
+        if self.SG90 != self.prev_SG90: # change pose
+            if self.SG90 < 1.57:       
+                self.pwm_servo.ChangeDutyCycle(self.openPose)
+            else:
+                self.pwm_servo.ChangeDutyCycle(self.closePose)
+            #self.pwm_servo.stop()
+            
+        self.prev_SG90 = self.SG90
 
 
     def __init__(self):
         GPIO.setwarnings(False)
-        rospy.init_node('actuator_controller', anonymous=False)
-        rate = rospy.Rate(ROBOT_FREQ)
+        rospy.init_node('actuator_controller', anonymous=False, log_level=rospy.DEBUG)
+        rate = rospy.Rate(10)
 
         self.pos = JointState()
         self.pos.name = ["joint_1", "joint_2", "joint_3", "joint_4"]
@@ -70,7 +85,7 @@ class Servo_Controller:
 
         # Comms with Dynamixels
         self.dynamixel_pub = rospy.Publisher("desired_joint_states", JointState, queue_size=10)
-        self.dynamixel_sub = rospy.Subscriber("joint_states", JointState, self.cb_current_js)
+        rospy.Subscriber("joint_states", JointState, self.cb_current_js)
 
         # Comms with Trajectory Planner
         rospy.Subscriber("Trajectory_DesJS", DesJointState, self.cb_desired_js)
@@ -84,22 +99,29 @@ class Servo_Controller:
         self.closePose = 7.2
 
         self.SG90 = self.openPose
+        self.prev_SG90 = self.openPose
         self.testSG90 = self.openPose
-
+    
         # Configure the Pi to use pin names (i.e. BCM) and allocate I/O
         GPIO.setmode(GPIO.BCM)
         GPIO.setup(13, GPIO.OUT)
 
         # Create PWM channel on pin 13 with a frequency of 50Hz
-        pwm_servo = GPIO.PWM(13, 50)
-        pwm_servo.start(self.closePose) # Duty cycle of 7.2 is the gripper open pose
+        self.pwm_servo = GPIO.PWM(13, 50)
+        self.pwm_servo.start(self.openPose) # Duty cycle of 7.2 is the gripper open pose
+        #self.pwm_servo.stop()
         
        # print("end of init")
         #self.head_value = 1.3
         #self.up = False
         #self.test()
         while not rospy.is_shutdown():
-            #pwm_servo.ChangeDutyCycle(self.gripperControl(self.testSG90))
+            #if self.gripperControl(self.SG90)==self.closePose:
+            #    pwm_servo.ChangeDutyCycle(self.closePose)
+            if self.gripperControl(self.SG90) == True:
+                pwm_servo.ChangeDutyCycle(self.SG90)
+                rospy.loginfo("changing duty cycle")
+            #self.stop_pwm_twitching()
             #rospy.sleep(0.05)
             
            # self.test()

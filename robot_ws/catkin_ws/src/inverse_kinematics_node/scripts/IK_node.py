@@ -98,7 +98,6 @@ class IK_Ibis:
         B = np.arccos(cosB)
         theta1_1 = gamma + B  # rad
 
-
         # Rotate desired orientation to the claw frame
         """
         orientation_arm = -(orientation[2] -
@@ -107,8 +106,8 @@ class IK_Ibis:
                            theta1_2 -
                            self.clawAngleOffset)
         """
-        orientation_arm = - orientation[2] + theta1_1 + self.thetaHomeOffset + theta1_2 \
-                          - self.clawAngleOffset
+        orientation_arm = -1 * (orientation[2] - (theta1_1 + self.thetaHomeOffset + theta1_2 \
+                          + self.clawAngleOffset))
 
         # Limit theta3 angles to +/- pi/2
         theta1_3 = 0
@@ -117,7 +116,7 @@ class IK_Ibis:
         elif orientation_arm < 0:
             theta1_3 = np.mod(orientation_arm, -1 * np.pi / 2)
 
-        return [theta1_1, theta1_2, -theta1_3]
+        return [theta1_1, theta1_2, theta1_3]
 
     """ Offset theta1 for the slew axis """
     #FIXME: nothing calls this function

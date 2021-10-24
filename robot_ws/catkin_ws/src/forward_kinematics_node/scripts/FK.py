@@ -9,6 +9,9 @@ from control_logic_node.msg import CubePose, ClawPose, CurrentJointState
 # -150, 210.878, 213.077 -> -50, -150, 0
 # 100, 88, 219.464 -> 100, 62.2, 50
 
+class CubePose:
+    position = [0., 0., 0., 0.]
+    colour = "RED"
 
 # Create a 3x3 rotation matrix
 def rot(axis, angle, vect=None, matrix=None):
@@ -45,34 +48,41 @@ class FK_Ibis:
     def cb_calculate_claw_pose(self, msg):
         self.thetas = np.array(msg.thetas)
         self.calculate_transformation_matrices() # For cube pose calculation
-        #T0_4 = mr.FKinSpace(self.M, self.screws.T, self.thetas[1:])  # Transformation of claw
-        #clawPose = ClawPose()
-        #clawPose.position = [T0_4[0][3],  # x
-        #                     T0_4[1][3],  # y
-        #                     T0_4[2][3],  # z
-        #                     np.arccos(T0_4[0][0])]  # theta_z
-        #self.clawPosePub.publish(clawPose)
-
 
     def cb_calculate_cube_pose(self, msg):
-    
+        self.calculate_transformation_matrices()
+
+        # Make a transformation matrix that represents the cube's position
+        # relative to the camera
         R6_5 = rot(np.array([0, 0, 1]), 0)
         cube6_5 = np.array([[msg.position[0]],
                               [msg.position[1]],
                               [msg.position[2]]])
    
         self.T6_5 = np.concatenate((R6_5, cube6_5), axis=1)
-        
         self.T6_5 = np.append(self.T6_5, [[0, 0, 0, 1]], axis=0)
         rospy.logerr("\nT6_5")
         rospy.logerr(self.T6_5)
-        
-        T0_5 = self.T0_6 @ self.T6_5
+
+        # Transform the pose of the cube from the camera to the origin frame
+        self.T0_5 = self.T0_6 @ self.T6_5
         rospy.logerr("\nT0_6")
         rospy.logerr(self.T0_6)
         rospy.logerr("\nT0_5")
-        rospy.logerr(T0_5)
-        """
+        rospy.logerr(self.T0_5)
+
+        cubePose = CubePose()
+        cubePose.position = [self.T0_5[0][3],
+                             self.T0_5[1][3],
+                             self.T0_5[2][3],
+                             msg.position[3] + np.pi/4 - self.theta1_home_offset - self.thetas[1]] # TODO fix orientation
+        cubePose.colour = msg.colour
+        rospy.logerr(cubePose)
+        self.cubePosePub.publish(cubePose)
+        return cubePose
+
+
+    def apply_workspace_limits(self, position):
         # Ensure that the calculated pose is within the allowable workspace in the xy plane
         for coordinate in range(2):
             value = T0_5[coordinate][3]
@@ -99,22 +109,13 @@ class FK_Ibis:
             T0_5[2][3] = self.workspace_lower_limit[2]
         elif T0_5[2][3] > self.workspace_upper_limit[2]:
             T0_5[2][3] = self.workspace_upper_limit[2]
-        """
-        cubePose = CubePose()
-        cubePose.position = [T0_5[0][3],
-                             T0_5[1][3],
-                             T0_5[2][3],
-                             np.arccos(T0_5[0][0])]
-        cubePose.colour = msg.colour
-        rospy.logerr(cubePose)
-        self.cubePosePub.publish(cubePose)
+
 
     """"""
     def __init__(self):
         self.workspace_lower_limit = [80, 80, 10]
         self.workspace_upper_limit = [310, 310, 100]
-
-
+        
         self.initialise_robot_parameters()
 
         ## Claw pose ##
@@ -132,7 +133,7 @@ class FK_Ibis:
         self.cubePoseSub = rospy.Subscriber('Camera_Pose', CubePose, self.cb_calculate_cube_pose)
         
         rospy.sleep(2)
-        self.test()
+        
         
     def test(self):
         rospy.logerr("start test")
@@ -150,13 +151,13 @@ class FK_Ibis:
         self.armA_l = 185.  # mm length of armA
         self.armB_l = 140.  # mm length of armB
         self.z4 = 10  # mm height of claw
-        self.r_6 = np.array([29.104, -29.104, 285.589])  # mm position of camera relative to frame{0}
+        self.p_6 = np.array([29.104, -29.104, 285.589])  # mm position of camera relative to frame{0}
         self.PITCH = 1.  # For the vertical axis, joint 4
         self.camera_tilt = 63 * np.pi / 180  # tilt angle of the camera {6}
 
         # Create the initial transformation and screws for all joint frames
-        self.T0_1, self.T0_2, self.T1_2, self.T2_3, self.T3_4, self.T6_5, self.T1_6 \
-            = np.zeros((7, 4, 4))
+        self.T0_1, self.T0_2, self.T1_2, self.T2_3, self.T3_4, self.T6_5, self.T1_6, self.T0_5 \
+            = np.zeros((8, 4, 4))
 
         # Joint angles in radians. This includes a joint that does not exist in the first position
         # thetas[0] is not a real joint. Used to so that index number is same as joint number.
@@ -171,163 +172,45 @@ class FK_Ibis:
         self.R16 = self.R1Z @ self.RZY @ self.RY6
 
         self.calculate_transformation_matrices()
-        # End effector position relative to home
-        self.M = self.T0_1 @ self.T1_2 @ self.T2_3 @ self.T3_4
-
-        # Frame distance from origin
-        q1 = np.array([0, 0, self.z1])
-        q2 = np.array([self.armA_l * np.cos(self.theta1_home_offset),
-                       self.armA_l * np.sin(self.theta1_home_offset),
-                       self.z1])
-        q3 = np.array([(self.armA_l + self.armB_l) * np.cos(self.theta1_home_offset),
-                       (self.armA_l + self.armB_l) * np.sin(self.theta1_home_offset),
-                       self.z1])
-
-        # Skew axis representation of rotation about z axis
-        wz_skew = mr.VecToso3(np.array([0, 0, 1]))
-
-        # Velocity vectors
-        v1 = np.dot(-1 * wz_skew, q1)
-        v2 = np.dot(-1 * wz_skew, q2)
-        v3 = np.dot(-1 * wz_skew, q3)
-        v4 = np.array([0, 0, self.PITCH])  # translation along z axis
-
-        # Screws of each joint
-        S1 = np.block([np.array([0, 0, 1]), v1])
-        S2 = np.block([np.array([0, 0, 1]), v2])
-        S3 = np.block([np.array([0, 0, 1]), v3])
-        S4 = np.block([np.array([0, 0, 0]), v4])
-        self.screws = np.array([S1, S2, S3, S4])
 
 
     def calculate_transformation_matrices(self):
-        """
         # Relative transformation matrices
         self.R1 = rot(np.array([0, 0, 1]), self.thetas[1] + self.theta1_home_offset)
         self.T0_1 = mr.RpToTrans(self.R1, np.array([0, 0, self.z1]))  # origin to armA joint
-        self.R2 = rot(np.array([0, 0, 1]), self.thetas[2])
-        self.T1_2 = mr.RpToTrans(self.R2, np.array([self.armA_l, 0, 0]))  # armA joint to armB joint
-        self.R3 = rot(np.array([0, 0, 1]), self.thetas[3] + self.claw_angle_offset)
-        self.T2_3 = mr.RpToTrans(self.R3, np.array([self.armB_l, 0, 0]))  # armB joint to claw orientation
-        self.R4 = rot(np.array([0, 0, 1]), 0)
-        self.T3_4 = mr.RpToTrans(self.R4, np.array([0, 0, (self.z4 - self.z1) +
-                                                    self.PITCH * self.thetas[4]]))
-        """                                           
-                                                    # Relative transformation matrices
-        
 
-        self.T1_6 = mr.RpToTrans(self.R16, self.r_6 - np.array([0, 0, self.z1]))  # Camera pose relative to frame {1}
+        # Relative transformation matrices
+        self.T1_6 = mr.RpToTrans(self.R16, self.p_6 - np.array([0, 0, self.z1]))  # Camera pose relative to frame {1}
         self.T0_6 = self.T0_1 @ self.T1_6
 
-    def test_camera_transforms(self):
-        # searching position
-        self.thetas = np.array([0., (-157.33 + 45) * np.pi / 180, 0., 0., 0.])
-        self.calculate_transformation_matrices()
-        orientation = np.array([[1, 0, 0],
-                                [0, 1, 0],
-                                [0, 0, 1]])
-        padding = np.array([[0., 0., 0., 1.]])
+    def test_camera_to_origin(self):
+        self.thetas = np.array([0., 45 * np.pi / 180, 0., 0., 0.])
 
-        # Point 1 - searching position
-        r0_p1 = np.array([[0.], [190.], [10.]])
-        T0_p1 = np.concatenate((orientation, r0_p1), axis=1)
-        T0_p1 = np.concatenate((T0_p1, padding), axis=0)
+        msg = CubePose()
 
-        T6_p1 = mr.TransInv(self.T0_6) @ T0_p1
-        print(f"Transform from Origin perspective\n{T0_p1}")
-        print(f"Transform camera perspective \n{T6_p1}")
+        msg.position = [0, -7.5, 313, 0]
+        print(f"Camera cube position = {msg.position}")
+        cubePose = self.cb_calculate_cube_pose(msg)
+        print(f"Origin cube position = {cubePose.position}")
+        print(f"Origin cube position should be [0, 190, 10, ]\n")
 
-        # searching position
-        self.thetas = np.array([0., (-157.33 + 45) * np.pi / 180, 0., 0., 0.])
-        self.calculate_transformation_matrices()
-        orientation = np.array([[1, 0, 0],
-                                [0, 1, 0],
-                                [0, 0, 1]])
-        padding = np.array([[0., 0., 0., 1.]])
+        msg.position = [-150, 211, 213, 0]
+        print(f"Camera cube position = {msg.position}")
+        cubePose = self.cb_calculate_cube_pose(msg)
+        print(f"Origin cube position = {cubePose.position}")
+        print(f"Origin cube position should be [-50, -150, 0]\n")
 
-        # Point 1 - searching position
-        r0_p1 = np.array([[100], [62.2], [50.0]])
-        T0_p1 = np.concatenate((orientation, r0_p1), axis=1)
-        T0_p1 = np.concatenate((T0_p1, padding), axis=0)
-
-        T6_p1 = mr.TransInv(self.T0_6) @ T0_p1
-        print(f"Transform from Origin perspective\n{T0_p1}")
-        print(f"Transform camera perspective \n{T6_p1}")
-
-        # searching position
-        self.thetas = np.array([0., (-157.33 + 45) * np.pi / 180, 0., 0., 0.])
-        self.calculate_transformation_matrices()
-        orientation = np.array([[1, 0, 0],
-                                [0, 1, 0],
-                                [0, 0, 1]])
-        padding = np.array([[0., 0., 0., 1.]])
-
-        # Point 1 - searching position
-        r0_p1 = np.array([[-150], [-50], [0.0]])
-        T0_p1 = np.concatenate((orientation, r0_p1), axis=1)
-        T0_p1 = np.concatenate((T0_p1, padding), axis=0)
-
-        T6_p1 = mr.TransInv(self.T0_6) @ T0_p1
-        print(f"Transform from Origin perspective\n{T0_p1}")
-        print(f"Transform camera perspective \n{T6_p1}")
-
-    def test_claw_FK(self):
-        self.thetas = np.array([0., 0., 0., 0., 0.])
-        self.calculate_transformation_matrices() # For cube pose calculation
-        T0_4 = mr.FKinSpace(self.M, self.screws.T, self.thetas[1:])  # Transformation of claw
-        position = [T0_4[0][3],  # x
-                             T0_4[1][3],  # y
-                             T0_4[2][3],  # z
-                             np.arccos(T0_4[0][0])]  # theta_z
-        print(f"Joint angles \t{self.thetas[1:]}")
-        print(f"Claw position \t{position}")
-
-        self.thetas = np.array([0., 0., 0., np.pi / 2, 0.])
-        self.calculate_transformation_matrices()  # For cube pose calculation
-        T0_4 = mr.FKinSpace(self.M, self.screws.T, self.thetas[1:])  # Transformation of claw
-        position = [T0_4[0][3],  # x
-                    T0_4[1][3],  # y
-                    T0_4[2][3],  # z
-                    np.arccos(T0_4[0][0])]  # theta_z
-        print(f"Joint angles \t{self.thetas[1:]}")
-        print(f"Claw position \t{position}")
-
-        self.thetas = np.array([0., 0., -np.pi / 2, np.pi / 2, 0.])
-        self.calculate_transformation_matrices()  # For cube pose calculation
-        T0_4 = mr.FKinSpace(self.M, self.screws.T, self.thetas[1:])  # Transformation of claw
-        position = [T0_4[0][3],  # x
-                    T0_4[1][3],  # y
-                    T0_4[2][3],  # z
-                    np.arccos(T0_4[0][0])]  # theta_z
-        print(f"Joint angles \t{self.thetas[1:]}")
-        print(f"Claw position \t{position}")
-
-        self.thetas = np.array([0., np.pi / 2, 0., -np.pi / 2, 0.])
-        self.calculate_transformation_matrices()  # For cube pose calculation
-        T0_4 = mr.FKinSpace(self.M, self.screws.T, self.thetas[1:])  # Transformation of claw
-        position = [T0_4[0][3],  # x
-                    T0_4[1][3],  # y
-                    T0_4[2][3],  # z
-                    np.arccos(T0_4[0][0])]  # theta_z
-        print(f"Joint angles \t{self.thetas[1:]}")
-        print(f"Claw position \t{position}")
-
-        self.thetas = np.array([0., 0., 0., 0., 80])
-        self.calculate_transformation_matrices()  # For cube pose calculation
-        T0_4 = mr.FKinSpace(self.M, self.screws.T, self.thetas[1:])  # Transformation of claw
-        position = [T0_4[0][3],  # x
-                    T0_4[1][3],  # y
-                    T0_4[2][3],  # z
-                    np.arccos(T0_4[0][0])]  # theta_z
-        print(f"Joint angles \t{self.thetas[1:]}")
-        print(f"Claw position \t{position}")
+        msg.position= [100, 88.2, 219, 0]
+        print(f"Camera cube position = {msg.position}")
+        cubePose = self.cb_calculate_cube_pose(msg)
+        print(f"Origin cube position = {cubePose.position}")
+        print(f"Origin cube position should be [100, 62.2, 50]\n")
 
 
 if __name__ == '__main__':
-    np.set_printoptions(precision=2, suppress=True)
-    #fk_ibis = FK_Ibis()
-    #fk_ibis.test_claw_FK()
-    #fk_ibis.test_camera_transforms()
+    ##np.set_printoptions(precision=2, suppress=True)
+    ##fk_ibis = FK_Ibis()
+    ##fk_ibis.test_camera_to_origin()
 
     try:
         FK_Ibis()

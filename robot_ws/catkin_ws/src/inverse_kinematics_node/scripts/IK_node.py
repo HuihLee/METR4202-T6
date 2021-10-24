@@ -100,11 +100,15 @@ class IK_Ibis:
 
 
         # Rotate desired orientation to the claw frame
+        """
         orientation_arm = -(orientation[2] -
                            self.thetaHomeOffset -
                            theta1_1 +
                            theta1_2 -
                            self.clawAngleOffset)
+        """
+        orientation_arm = - orientation[2] + theta1_1 + self.thetaHomeOffset + theta1_2 \
+                          - self.clawAngleOffset
 
         # Limit theta3 angles to +/- pi/2
         theta1_3 = 0

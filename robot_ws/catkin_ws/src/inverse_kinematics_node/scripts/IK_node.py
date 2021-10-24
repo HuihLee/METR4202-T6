@@ -18,11 +18,14 @@ class DesPosition:
     orientation_z = 0.
 """
 
+
+
+
 class IK_Ibis:
 
     def cb_calculate_ik(self, received):
         position = np.array([received.position[0], received.position[1], received.position[2]])
-        orientation = np.array([0, 0, received.position[3]])
+        orientation = np.array([0, 0, received.orientation_z])
         targetJS = self.IKin(position, orientation)
         targetJS.append(0.)
         targetJS.append(0.)
@@ -30,10 +33,10 @@ class IK_Ibis:
 
         msg = TargetJointState()
         msg.thetas = targetJS
-        self.pub.Publish(msg)
-
+        rospy.logerr(targetJS)
+        self.pub.publish(msg)
     """
-    # Params for the inverse kinematics of the position of the arm
+    #Params for the inverse kinematics of the position of the arm
     self.armA_l = 185.   # mm length of armA
     armB_l = 140.   # mm length of armB
     zHome = 100.    # mm home height of claw
@@ -49,21 +52,32 @@ class IK_Ibis:
         self.armB_l = 140.  # mm length of armB
         self.zHome = 100.  # mm home height of claw
         self.thetas = np.array([0., 0., 0., 0., self.zHome])  # theta[0] is not a real joint
-        self.thetaHomeOffset = (157.33 + 90) * (
+        self.thetaHomeOffset = (90) * ( #157.33
                     np.pi / 180)  # rad - this is the home angle of the arm relative to the x axis
         self.clawAngleOffset = -15 * (np.pi / 180)  # rad - offset angle for claw relative to armB
         self.PITCH = 1.
         self.z4 = 10  # mm height of claw# For the vertical axis, joint 4
         
         # Initialize node
-        rospy.init_node('Inverse_Kinematics', anonymous=True)
+        rospy.init_node('Inverse_Kinematics', anonymous=True, log_level=rospy.DEBUG)
         # Publish
-        self.pub = rospy.Publisher('IK_JS', self.TargetJointState, queue_size=1)
+        self.pub = rospy.Publisher('IK_JS', TargetJointState, queue_size=1)
         # Subscribe
-        self.sub = rospy.Subscriber('CL_Position', self.DesPosition, self.cb_calculate_ik)
+        self.sub = rospy.Subscriber('CL_Position', DesPosition, self.cb_calculate_ik)
+        
+        self.test_ik()
         
 
     def IKin(self, position, orientation):
+    
+    
+        #rotate0_3 = np.array([[1, 0, 0], [0, -1, 0], [0, 0, -1]])
+    
+            
+        
+        
+    
+    
         # Rotate position to the offset frame for the slew joint
         rotate0_1 = np.array([[np.cos(self.thetaHomeOffset), np.sin(self.thetaHomeOffset), 0],
                               [-1 * np.sin(self.thetaHomeOffset), np.cos(self.thetaHomeOffset), 0],
@@ -77,20 +91,18 @@ class IK_Ibis:
         cosC = (self.armA_l ** 2 + self.armB_l ** 2 - c ** 2) / \
                (2 * self.armA_l * self.armB_l)  # cosine rule
         C = np.arccos(cosC)
-        theta1_2 = -1 * (np.pi - C)  # rad
+        theta1_2 = 1 * (np.pi - C)  + self.clawAngleOffset# rad
 
         cosB = (c ** 2 + self.armA_l ** 2 - self.armB_l ** 2) / \
                (2 * c * self.armA_l)  # cosine rule
         B = np.arccos(cosB)
         theta1_1 = gamma + B  # rad
 
-        # Keep the claw at it's given height
-        theta1_3 = positionArm[2] * self.PITCH
 
         # Rotate desired orientation to the claw frame
-        orientation_arm = (orientation[2] -
+        orientation_arm = -(orientation[2] -
                            self.thetaHomeOffset -
-                           theta1_1 -
+                           theta1_1 +
                            theta1_2 -
                            self.clawAngleOffset)
 
@@ -101,7 +113,7 @@ class IK_Ibis:
         elif orientation_arm < 0:
             theta1_3 = np.mod(orientation_arm, -1 * np.pi / 2)
 
-        return [theta1_1, theta1_2, theta1_3]
+        return [theta1_1, theta1_2, -theta1_3]
 
     """ Offset theta1 for the slew axis """
     #FIXME: nothing calls this function
@@ -164,30 +176,35 @@ class IK_Ibis:
         return cube_home_angles
 
     def test_ik(self):
+        rospy.logerr("start of test")
         desPosition = DesPosition()
         cube_height = self.z4  # mm
-        cube_positions = [
-            [-125, -25, cube_height],
-             [-125, -75, cube_height],
-             [-175, -75, cube_height],
-             [-175, -25, cube_height],
-            [-25, -125, cube_height],
-             [-25, -175, cube_height],
-             [-75, -175, cube_height],
-             [-75, -125, cube_height],
-            [75, -125, cube_height],
-             [75, -175, cube_height],
-             [25, -175, cube_height],
-             [25, -125, cube_height],
-            [175, -25, cube_height],
-             [175, -75, cube_height],
-             [125, -75, cube_height],
-             [125, -25, cube_height]]
+  
+        cube_positions = [[0,190, cube_height]]
+            #[-125, -25, cube_height],
+            # [-125, -75, cube_height],
+            # [-175, -75, cube_height],
+            # [-175, -25, cube_height],
+            #[-25, -125, cube_height],
+            # [-25, -175, cube_height],
+            # [-75, -175, cube_height],
+            # [-75, -125, cube_height],
+            #[75, -125, cube_height],
+            # [75, -175, cube_height],
+            # [25, -175, cube_height],
+            # [25, -125, cube_height],
+            #[175, -25, cube_height],
+            # [175, -75, cube_height],
+            # [125, -75, cube_height],
+            # [125, -25, cube_height]]
 
         for position in cube_positions:
             desPosition.position = position
-            desPosition.position.append(0.)
+            desPosition.orientation_z = 90 * np.pi/180
+            rospy.logerr(desPosition)
+            #desPosition.position.append(0.)
             self.cb_calculate_ik(desPosition)
+        rospy.logerr("finish test")
 
 if __name__ == '__main__':
     #ibis = IK_Ibis()

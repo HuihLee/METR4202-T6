@@ -6,13 +6,12 @@
     <!--<node pkg = "forward_kinematics_node" type = "FK.py" name="Forward_Kinematics_Node" />-->
 
 <!-- Launch inverse kinematics node -->
-    <!--<node pkg = "inverse_kinematics_node" type = "IK_node.py" name="Inverse_Kinematics_Node" />-->
+    <node pkg = "inverse_kinematics_node" type = "IK_node.py" name="Inverse_Kinematics_Node" />
     
 <!-- Launch trajectory node -->
     <node pkg = "trajectory_node" type = "robot_planner.py" name="Trajecotry_Node" />
 
 <!-- Launch servo node -->
-    <!-- <node pkg = "servo_node" type = "servo_control.py" name="Servo_Control_node" /> -->
     <include file = "$(find servo_node)/launch/servo.launch" />
 
 <!-- Launch camera node -->

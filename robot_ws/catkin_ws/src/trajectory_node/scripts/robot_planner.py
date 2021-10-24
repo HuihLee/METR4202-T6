@@ -24,6 +24,7 @@ class Traj:
         duration = msg.motionDuration
 
         dt = 0.05
+        rate = rospy.Rate(1 / dt)
         N = ceil(duration/dt)
         trajectory = mr.JointTrajectory(thetaStart, thetaEnd, Tf, N, method)
         
@@ -31,7 +32,7 @@ class Traj:
             # every dt seconds publish next joint state until N
             self.jointState.thetas = [way_point[0], way_point[1], way_point[2], way_point[3], way_point[4]]
 
-            rospy.sleep(dt) #FIXME - is the necessary?
+            rate.sleep() #FIXME - is the necessary?
             self.servoPub.publish(self.jointState)
         
         self.trajComplete = True

@@ -42,6 +42,7 @@ class OperationState(Enum):
     NORMAL = 0
     TEST_LOOP = 1
     TEST_JOINTS = 2
+    TEST_POSITION = 3
 
 
 operationState = OperationState.TEST_JOINTS
@@ -183,8 +184,9 @@ class ControlLogic:
 
         count = 0
         rospy.sleep(2)
-        operationState = OperationState.TEST_LOOP
+        operationState = OperationState.TEST_POSITION
         rospy.logerr(operationState)
+        self.trajectoryComplete = True
         # TODO: what calls control_logic? -> need to call function here
         while not rospy.is_shutdown():  # maybe this can work?
             if operationState is OperationState.TEST_LOOP:
@@ -192,21 +194,37 @@ class ControlLogic:
                 self.cubeColour = 0
                 self.test_loop()
             elif operationState is OperationState.TEST_JOINTS:
-                self.trajectoryComplete = True
+                #self.trajectoryComplete = True  #TODO: move back to line 195
                 self.ibisState = ControlState.ZERO
                 self.joints_loop()
+            elif operationState is OperationState.TEST_POSITION:
+                self.test()
+                #rate.sleep()
             else:
                 self.control_loop()
 
-            rospy.sleep(0.1)
-
+            #rospy.sleep(0.1)
+            rospy.sleep(1)
+            
     def test(self):
         message = TargetJointStateTrajectory()
-        message.thetasCurrent = [-0.500, -0.500, -0.500, -0.5, -0.5]
-        message.thetasTarget = [0.500, 0.500, 0.500, 0.5, 0.5]
-        message.motionDuration = 6
+        message.thetasCurrent = [0.00, 0.00, 0.00, 1.6, 0.]
+        
+        #message.thetasTarget = [0, 0, 0, 1.6, 0.0]
+
+        message.thetasTarget = [0.764, 1.658, -0.59, 1.6, 0.0]
+
+        message.motionDuration = 4
         self.trajectory_pub.publish(message)
 
+
+        message.thetasCurrent = [0.764, 1.658, -0.59, 1.6, 0.0]
+        #message.thetasTarget = [0, 0, 0, 1.6, 0.0]
+        #[0.0, -1.5707963267948966, 0.72640876049004, 0.0, 0.0]
+        message.thetasTarget = [0.00, 0.00, 0.00, 1.6, 0.]
+        message.motionDuration = 4
+        self.trajectory_pub.publish(message)
+        
     """ Initialise joint positions for cube homes """
 
     def initialise_cube_home_JS(self):
@@ -233,7 +251,7 @@ class ControlLogic:
         for colour_bin in range(4):
             for position in range(4):
                 msg.position = cubePositions[colour_bin][position]
-                msg.orientation = 0
+                msg.orientation_z = 0
                 self.IK_pub.publish(msg)
                 while self.targetJSReceived is False:
                     # do nothing
@@ -545,7 +563,8 @@ class ControlLogic:
         if self.trajectoryComplete is True:
             self.test_iterator = self.test_iterator % 16
             rospy.sleep(2)
-            self.move(self.test_joints[self.test_iterator], 3)
+            self.move(self.test_joints[self.test_iterator], 6)
+            self.currentJS = self.test_joints[self.test_iterator]
             self.test_iterator = self.test_iterator + 1
             self.trajectoryComplete = False
 

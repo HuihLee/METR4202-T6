@@ -7,15 +7,19 @@ import numpy as np
 from control_logic_node.msg import TargetJointStateTrajectory, CubePose, DesPosition
 from control_logic_node.msg import TargetJointState, TrajectoryComplete, CurrentJointState, ClawPose
 
+
 class OperationState(Enum):
     NORMAL = 0
     TEST_LOOP = 1
     TEST_JOINTS = 2
     TEST_POSITION = 3
 
+
 operationState = OperationState.TEST_POSITION
 
 """ Different states of the ibis arm"""
+
+
 class ControlState(Enum):
     ERROR = 0  # Something has gone wrong
     SEARCHING = 1  # Searching for a cube to pick up
@@ -41,38 +45,41 @@ class Colour(Enum):
 
 
 class ControlLogic:
-    """ Attributes here """
+    # State Machine variables
     ibisState = ControlState.SEARCHING  # State of the main control logic
     cubeFound = False  # Cube location has not yet been determined
     trajectoryComplete = False  # No trajectory is underway
     targetJSReceived = False  # No joint states have been received
 
-    cubePosition = [0, 0, 0, 0]  # ([x, y, z, theta_z])
-    currentJS = [0, 0, 0, 0, 0]  # ([theta1, theta2, theta3, theta4, theta5])
-    targetJS = [0, 0, 0, 0, 0]  # ([theta1, theta2, theta3, theta4, theta5])
-    searching_JS = []
-
-    cube_home_array = []
-
-    cube_home_JS = [[[0, 0, 0, 0, 0], [0, 0, 0, 0, 0], [0, 0, 0, 0, 0], [0, 0, 0, 0, 0]],
-                    [[0, 0, 0, 0, 0], [0, 0, 0, 0, 0], [0, 0, 0, 0, 0], [0, 0, 0, 0, 0]],
-                    [[0, 0, 0, 0, 0], [0, 0, 0, 0, 0], [0, 0, 0, 0, 0], [0, 0, 0, 0, 0]],
-                    [[0, 0, 0, 0, 0], [0, 0, 0, 0, 0], [0, 0, 0, 0, 0], [0, 0, 0, 0, 0]]]
-    cubeColour = 0
-    cubes_found = [0, 0, 0, 0]
-
+    # Default joint positions
     CLAW_UP_Z = 1.3  # rad
     CLAW_DOWN_Z = -0.6  # rad
     CLAW_OPEN = 3  # rad
     CLAW_CLOSE = 0  # rad
 
+    # Default joint states
+    cubePosition = [0, 0, 0, 0]  # ([x, y, z, theta_z])
+    currentJS = [0, 0, 0, 0, 0]  # ([theta1, theta2, theta3, theta4, theta5])
+    targetJS = [0, 0, 0, 0, 0]  # ([theta1, theta2, theta3, theta4, theta5])
+    searching_JS = [np.pi/4, 0, 0, CLAW_UP_Z, CLAW_OPEN]
+    cube_home_JS = [[[0, 0, 0, 0, 0], [0, 0, 0, 0, 0], [0, 0, 0, 0, 0], [0, 0, 0, 0, 0]],  # Position 0
+                    [[0, 0, 0, 0, 0], [0, 0, 0, 0, 0], [0, 0, 0, 0, 0], [0, 0, 0, 0, 0]],  # Position 1
+                    [[0, 0, 0, 0, 0], [0, 0, 0, 0, 0], [0, 0, 0, 0, 0], [0, 0, 0, 0, 0]],  # Position 2
+                    [[0, 0, 0, 0, 0], [0, 0, 0, 0, 0], [0, 0, 0, 0, 0], [0, 0, 0, 0, 0]]]  # Position 3
+    cube_home_array = []
+
+    cubeColour = 0
+    cubes_found = [0, 0, 0, 0] # counts of how many times each colour was found
+
+    # Durations of each movement
     OVER_CUBE_TIME = 2  # sec
     UP_DOWN_TIME = 1  # sec
     CLAW_OPEN_CLOSE_TIME = 0.2  # sec
     CUBE_HOME_TIME = 6  # sec
     MOVE_HOME_TIME = 6  # sec
 
-    """ Testing stuff """
+    # Test positions
+    # TODO delete this before submissions
     test_joints = [[0, 0, 0, CLAW_UP_Z, CLAW_OPEN],
                    [np.pi, 0, 0, CLAW_UP_Z, CLAW_OPEN],
                    [0, 0, 0, CLAW_UP_Z, CLAW_OPEN],
@@ -121,41 +128,41 @@ class ControlLogic:
                                       DesPosition,
                                       queue_size=10)
         rospy.Subscriber('IK_JS',
-                           TargetJointState,
-                           self.cb_target_js)
-                                       
+                         TargetJointState,
+                         self.cb_target_js)
+
         # Comms with Trajectory
         self.trajectory_pub = rospy.Publisher('CL_TargetJS',
                                               TargetJointStateTrajectory,
                                               queue_size=10)
         rospy.Subscriber('Trajectory_Status',
-                        TrajectoryComplete,
-                        self.cb_trajectory_complete)
+                         TrajectoryComplete,
+                         self.cb_trajectory_complete)
 
         # Comms with actuator
         rospy.Subscriber('Actuator_CurrentJS',
-                             CurrentJointState,
-                             self.cb_current_js)
+                         CurrentJointState,
+                         self.cb_current_js)
 
         self.waiting_bool = False  # bool used idle state
 
         # Comms with FK
         rospy.Subscriber('FK_CubePose',
-                            CubePose,
-                            self.cb_cubePose)
+                         CubePose,
+                         self.cb_cubePose)
 
         rate = rospy.Rate(100)  # change hertz??
 
         # Get block home positions from user
         # TODO: I think i stuffed this up. Must fix
-        # self.cube_home_array = self.get_block_homes()
+        self.cube_home_array = self.get_block_homes()
 
         # Calculate the IK for each of the cube home
         # positions and add them to an array of joint states
-        # self.initialise_cube_home_JS()
+        self.initialise_cube_home_JS()
 
         count = 0
-        rospy.sleep(2) # give everything time to init
+        rospy.sleep(2)  # give everything time to init
 
         rospy.logerr(operationState)
         self.trajectoryComplete = True
@@ -166,7 +173,7 @@ class ControlLogic:
                 self.cubeColour = 0
                 self.test_loop()
             elif operationState is OperationState.TEST_JOINTS:
-                #self.trajectoryComplete = True  #TODO: move back to line 195
+                # self.trajectoryComplete = True  #TODO: move back to line 195
                 self.ibisState = ControlState.ZERO
                 self.joints_loop()
             elif operationState is OperationState.TEST_POSITION:
@@ -176,7 +183,6 @@ class ControlLogic:
                 self.control_loop()
 
             rospy.sleep(1)
-
 
     def test_position(self):
         # Calculate the required joint positions
@@ -202,7 +208,7 @@ class ControlLogic:
         rospy.sleep(5)
 
         # Calculate the required joint positions
-        self.cubePosition = [0, 190, 0, np.pi/4]
+        self.cubePosition = [0, 190, 0, np.pi / 4]
         self.calculate_JS()
 
         rospy.sleep(1)
@@ -224,7 +230,7 @@ class ControlLogic:
         rospy.sleep(5)
 
         # Calculate the required joint positions
-        self.cubePosition = [0, 190, 0, -np.pi * 5/ 4]
+        self.cubePosition = [0, 190, 0, -np.pi * 5 / 4]
         self.calculate_JS()
 
         rospy.sleep(1)
@@ -244,7 +250,7 @@ class ControlLogic:
         self.trajectory_pub.publish(message)
 
         rospy.sleep(5)
-        
+
     """ Initialise joint positions for cube homes """
 
     def initialise_cube_home_JS(self):
@@ -268,14 +274,19 @@ class ControlLogic:
              [125, -25, cubeHeight]],
         ]
         msg = DesPosition()
+        rate = rospy.Rate(100)
         for colour_bin in range(4):
             for position in range(4):
                 msg.position = cubePositions[colour_bin][position]
                 msg.orientation_z = 0
+
+                # Calculate the joint state
                 self.IK_pub.publish(msg)
                 while self.targetJSReceived is False:
                     # do nothing
-                    rospy.sleep(0.05)
+                    rate.sleep()
+
+                # Populate the joint state array
                 self.cube_home_JS[colour_bin][position] = self.targetJS
                 self.targetJSReceived = False
 
@@ -387,10 +398,10 @@ class ControlLogic:
                         self.CLAW_OPEN]
         self.move(thetasTarget, self.CLAW_OPEN_CLOSE_TIME)
 
-    def move_home(self):
-        thetasTarget = [self.targetJS[0],
-                        self.targetJS[1],
-                        self.targetJS[2],
+    def move_searching_position(self):
+        thetasTarget = [self.searching_JS,
+                        0,
+                        0,
                         self.CLAW_UP_Z,
                         self.CLAW_OPEN]
         self.move(thetasTarget, self.MOVE_HOME_TIME)
@@ -402,43 +413,37 @@ class ControlLogic:
     """ Main control loop """
 
     def control_loop(self):  # TODO: had to change to basic if switch case due to python version issues
-        # Set to home
-        # match self.ibisState:
+        # Start - wait for camera to publish the cube pose
         if self.ibisState is ControlState.SEARCHING:
-            # case ControlState.SEARCHING:
-            # searching()
-            if self.cubeFound is True:
-                """ Receive cube pose from the camera """
+            if self.cubeFound is True:  # updated in the cb_cubePose() from the subscriber
                 self.ibisState = ControlState.CALCULATE_IK
-        elif self.ibisState is ControlState.CALCULATE_IK:
-            self.cubeFound = False
 
-            # else if self.ibisState is ControlState.CALCULATE_IK:
-            # case ControlState.CALCULATE_IK:
-            if self.waiting_bool == False:
+        # Calculate the joint states to get to the cube position
+        elif self.ibisState is ControlState.CALCULATE_IK:
+            if not self.waiting_bool:  # Waiting prevents the calculate_JS() from continuously calling
                 self.calculate_JS()
                 self.waiting_bool = True
             else:
-                if self.targetJSReceived is True:
+                if self.targetJSReceived is True:  # The joint state is received from trajectory node via cb_target_js()
                     self.ibisState = ControlState.MOVE_OVER_CUBE
                     self.targetJSReceived = False
                     self.waiting_bool = False
 
+        # Move over the top of the cube
         elif self.ibisState is ControlState.MOVE_OVER_CUBE:
-            # case ControlState.MOVE_OVER_CUBE:
-            if self.waiting_bool == False:
-                self.move_over_cube()
+            if not self.waiting_bool:
+                self.move_over_cube()  # generates a trajectory
                 self.waiting_bool = True
             else:
-                if self.trajectoryComplete is True:
+                if self.trajectoryComplete is True:  # The claw is now over the cube cb_trajectory_complete()
                     self.ibisState = ControlState.DOWN_PICKUP
                     self.trajectoryComplete = False
                     self.waiting_bool = False
 
+        # Move the claw down
         elif self.ibisState is ControlState.DOWN_PICKUP:
-            # case ControlState.DOWN_PICKUP:
-            if self.waiting_bool == False:
-                self.down_pickup()
+            if not self.waiting_bool:
+                self.down_pickup()  # moves down to pickup the cube
                 self.waiting_bool = True
             else:
                 if self.trajectoryComplete is True:
@@ -446,9 +451,9 @@ class ControlLogic:
                     self.trajectoryComplete = False
                     self.waiting_bool = False
 
+        # Close the claw
         elif self.ibisState is ControlState.CLAW_PICKUP:
-            # case ControlState.CLAW_PICKUP:
-            if self.waiting_bool == False:
+            if not self.waiting_bool:
                 self.claw_pickup()
                 self.waiting_bool = True
             else:
@@ -457,9 +462,9 @@ class ControlLogic:
                     self.trajectoryComplete = False
                     self.waiting_bool = False
 
+        # Move the claw up
         elif self.ibisState is ControlState.UP_PICKUP:
-            # case ControlState.UP_PICKUP:
-            if self.waiting_bool == False:
+            if not self.waiting_bool:
                 self.up_pickup()
                 self.waiting_bool = True
             else:
@@ -468,9 +473,9 @@ class ControlLogic:
                     self.trajectoryComplete = False
                     self.waiting_bool = False
 
+        # Move the claw to over the cube colour bin
         elif self.ibisState is ControlState.CUBE_HOME:
-            # case ControlState.CUBE_HOME:
-            if self.waiting_bool == False:
+            if not self.waiting_bool:
                 self.cube_home()
                 self.waiting_bool = True
             else:
@@ -479,9 +484,9 @@ class ControlLogic:
                     self.trajectoryComplete = False
                     self.waiting_bool = False
 
+        # Move down to colour bin
         elif self.ibisState is ControlState.DOWN_DROP:
-            # case ControlState.DOWN_DROP:
-            if self.waiting_bool == False:
+            if not self.waiting_bool:
                 self.down_drop()
                 self.waiting_bool = True
             else:
@@ -490,9 +495,9 @@ class ControlLogic:
                     self.trajectoryComplete = False
                     self.waiting_bool = False
 
+        # Drop cube
         elif self.ibisState is ControlState.CLAW_DROP:
-            # case ControlState.CLAW_DROP:
-            if self.waiting_bool == False:
+            if not self.waiting_bool:
                 self.claw_drop()
                 self.waiting_bool = True
             else:
@@ -501,9 +506,9 @@ class ControlLogic:
                     self.trajectoryComplete = False
                     self.waiting_bool = False
 
+        # Lift up the claw
         elif self.ibisState is ControlState.UP_DROP:
-            # case ControlState.UP_DROP:
-            if self.waiting_bool == False:
+            if not self.waiting_bool:
                 self.up_drop()
                 self.waiting_bool = True
             else:
@@ -512,17 +517,17 @@ class ControlLogic:
                     self.trajectoryComplete = False
                     self.waiting_bool = False
 
+        # Move to the searching position
         elif self.ibisState is ControlState.MOVE_HOME:
-            # case ControlState.MOVE_HOME:
-            if self.waiting_bool == False:
-                self.move_home()
+            if not self.waiting_bool:
+                self.move_searching_position()
                 self.waiting_bool = True
             else:
                 if self.trajectoryComplete is True:
                     self.ibisState = ControlState.SEARCHING
+                    self.cubeFound = False
                     self.trajectoryComplete = False
                     self.waiting_bool = False
-
         else:
             # has an error occured? 
             print("ERROR: unknown ibisState")
@@ -530,6 +535,7 @@ class ControlLogic:
     """ Testing loop """
 
     def test_loop(self):
+
         # Go zero
         if self.ibisState is ControlState.ZERO:
             if self.waiting_bool == False:
@@ -539,11 +545,11 @@ class ControlLogic:
                 rospy.sleep(2)
                 self.ibisState = ControlState.SEARCHING
                 self.trajectoryComplete = False
+
         # go to searching
         elif self.ibisState is ControlState.SEARCHING:
-            # case ControlState.MOVE_HOME:
             if self.waiting_bool == False:
-                self.move_home()
+                self.move_searching_position()
                 self.waiting_bool = True
             else:
                 if self.trajectoryComplete is True:
@@ -551,8 +557,8 @@ class ControlLogic:
                     self.ibisState = ControlState.CLAW_PICKUP
                     self.trajectoryComplete = False
                     self.waiting_bool = False
+
         elif self.ibisState is ControlState.CLAW_PICKUP:
-            # case ControlState.CLAW_PICKUP:
             if self.waiting_bool == False:
                 self.move([np.pi / 2,
                            -np.pi / 2,
@@ -566,9 +572,9 @@ class ControlLogic:
                     self.ibisState = ControlState.CUBE_HOME
                     self.trajectoryComplete = False
                     self.waiting_bool = False
+
         elif self.ibisState is ControlState.CUBE_HOME:
-            # case ControlState.CUBE_HOME:
-            if self.waiting_bool == False:
+            if not self.waiting_bool:
                 self.move([135 * np.pi / 180, -np.pi, np.pi, self.CLAW_UP_Z, self.CLAW_CLOSE], 5)
                 self.waiting_bool = True
             else:

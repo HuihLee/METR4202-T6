@@ -1,15 +1,15 @@
 <launch>
 <!-- Launch control logic node -->
-<!--    <node pkg = "control_logic_node" type = "control_logic.py" name="Control_Logic_Node" /> -->
+    <node pkg = "control_logic_node" type = "control_logic.py" name="Control_Logic_Node" />
     
 <!-- Launch forward kinematics node -->
      <node pkg = "forward_kinematics_node" type = "FK.py" name="Forward_Kinematics_Node" />
 
 <!-- Launch inverse kinematics node -->
-<!--    <node pkg = "inverse_kinematics_node" type = "IK_node.py" name="Inverse_Kinematics_Node" /> -->
+    <node pkg = "inverse_kinematics_node" type = "IK_node.py" name="Inverse_Kinematics_Node" />
     
 <!-- Launch trajectory node -->
-<!--     <node pkg = "trajectory_node" type = "robot_planner.py" name="Trajecotry_Node" /> -->
+     <node pkg = "trajectory_node" type = "robot_planner.py" name="Trajecotry_Node" /> 
 
 <!-- Launch servo node -->
     <include file = "$(find servo_node)/launch/servo.launch" /> 
@@ -20,5 +20,5 @@
 <!-- Launch Debugging/checking camera is in focus node -->
 
 <!-- Launch Debugging/checking rqt graph -->
-    <!-- <node pkg = "rqt_graph" type = "rqt_graph" name="display_node_comms" /> -->
+    <node pkg = "rqt_graph" type = "rqt_graph" name="display_node_comms" />
 </launch>

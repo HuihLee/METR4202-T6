@@ -10,7 +10,7 @@ from vision_msgs.msg import Detection2D, Detection2DArray, ObjectHypothesisWithP
 
 import math
 
-ROBOT_FREQ = 10
+ROBOT_FREQ = 100
 
 cam_width = 1280
 cam_height = 1024
@@ -46,13 +46,14 @@ class Camera:
                     t2 = 1.0 - 2.0 * (y_quat * y_quat + z_quat * z_quat)
                     yaw = abs(math.atan2(t1, t2))
                     
+                    """
                     if yaw > math.pi:
                         yaw = yaw - math.pi
 
                     if yaw > math.pi/2:
                         yaw = yaw - math.pi/2
-                    
-                    angle = yaw * 180/math.pi
+                    """
+                    angle = yaw# * 180/math.pi
 
                     new_y = max(self.y0, self.y1, self.y2, self.y3)+20
                     new_x = (self.x0 + self.x1 + self.x2 + self.x3)/4
@@ -74,8 +75,6 @@ class Camera:
                     
             except:
                 pass
-            # print(x, y, z, yaw)
-            # self.camera_pub.publish(message)
 
     def check_block_still(self, x, y):
         movement_x = abs(self.prev_x_pos - x)
@@ -83,7 +82,7 @@ class Camera:
         self.prev_x_pos = x
         self.prev_y_pos = y
 
-        if movement_x < MOVEMENT_THRESHOLD or movement_y < MOVEMENT_THRESHOLD:
+        if movement_x < MOVEMENT_THRESHOLD and movement_y < MOVEMENT_THRESHOLD:
             # block is still
             return True
         else:
@@ -105,7 +104,6 @@ class Camera:
 
     def cb_image(self, data):
         self.image = data.data
-        # rospy.sleep()
         
 
     def get_colour(self, width, height, x, y, image):
@@ -151,7 +149,7 @@ class Camera:
         elif (b >= r and b >= g):
             hue = 4.0 + (r-g)/(max_val - min_val)
         else:
-            print("how")
+           rospy.logerr("Hue angle cannot be calculated")
 
         hue_angle = hue * 60.0
 
@@ -173,7 +171,7 @@ class Camera:
 
     def __init__(self):
 
-        rospy.init_node('Camera', anonymous=False)
+        rospy.init_node('Camera', anonymous=False, log_level=rospy.DEBUG)
         rate = rospy.Rate(ROBOT_FREQ)
 
         # Comms with rest of robot
@@ -197,7 +195,8 @@ class Camera:
         self.prev_y_pos = None
 
         self.image = None
-
+        
+        rospy.sleep(2)  # give system time to init everything
 
 if __name__ == "__main__":
     try:

@@ -50,7 +50,7 @@ class Traj:
         self.controlPub = rospy.Publisher('Trajectory_Status', TrajectoryComplete, queue_size=10)
 
         # Create subscribers
-        self.targetJointSub = rospy.Subscriber('CL_TargetJS', TargetJointStateTrajectory, self.cb_control_logic)
+        rospy.Subscriber('CL_TargetJS', TargetJointStateTrajectory, self.cb_control_logic)
 
 
 if __name__ == "__main__":

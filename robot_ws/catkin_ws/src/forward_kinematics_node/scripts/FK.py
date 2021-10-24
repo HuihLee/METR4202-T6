@@ -9,7 +9,7 @@ from control_logic_node.msg import CubePose, ClawPose, CurrentJointState
 # -150, 210.878, 213.077 -> -50, -150, 0
 # 100, 88, 219.464 -> 100, 62.2, 50
 
-class CubePose:
+class CubePoseClass:
     position = [0., 0., 0., 0.]
     colour = "RED"
 
@@ -46,7 +46,7 @@ class FK_Ibis:
 
     """callbacks"""
     def cb_calculate_claw_pose(self, msg):
-        self.thetas = np.array(msg.thetas)
+        self.thetas[1:] = np.array(msg.thetas)
         self.calculate_transformation_matrices() # For cube pose calculation
 
     def cb_calculate_cube_pose(self, msg):
@@ -84,8 +84,32 @@ class FK_Ibis:
 
     def apply_workspace_limits(self, position):
         # Ensure that the calculated pose is within the allowable workspace in the xy plane
+        
+        x = T0_5[0][3]
+        y = T0_5[1][3]
+        
+        errorFlag = 0
+        
+        if y < self.workspace_lower_limit[1]:
+            T0_5[1][3] = self.workspace_lower_limit[1]
+            errorFlag = 1
+        elif y > self.workspace_upper_limit[1]:
+            T0_5[1][3] = self.workspace_upper_limit[1]
+            errorFlag = 1
+        elif x < self.workspace_lower_limit[0]:
+            T0_5[0][3] = self.workspace_lower_limit[0]
+            errorFlag = 1
+        elif x > self.workspace_upper_limit[0]:
+            T0_5[0][3] = self.workspace_upper_limit[0]
+            errorFlag = 1
+        
+        if errorFlag:
+            rospy.logerr("Error keeping block in workspace...")
+        
         for coordinate in range(2):
             value = T0_5[coordinate][3]
+            
+        """   
             # check the positive range
             if value >= 0:
                 # Check the lower range
@@ -103,7 +127,7 @@ class FK_Ibis:
                 elif value < -self.workspace_upper_limit[coordinate]:
                     value = -self.workspace_upper_limit[coordinate]
             value = T0_5[coordinate][3]
-
+        """
         # Ensure that the vertical position is within the allowable workspace
         if T0_5[2][3] < self.workspace_lower_limit[2]:
             T0_5[2][3] = self.workspace_lower_limit[2]
@@ -121,18 +145,20 @@ class FK_Ibis:
         ## Claw pose ##
         # Initialize node
         rospy.init_node('Forward_Kinematics', anonymous=True, log_level=rospy.DEBUG)
+        
         # Create publisher
-        self.clawPosePub = rospy.Publisher('FK_ClawPose', ClawPose, queue_size=1)
+        #self.clawPosePub = rospy.Publisher('FK_ClawPose', ClawPose, queue_size=1) Not being used?
+        
         # Create subscriber
-        self.actuatorSub = rospy.Subscriber('Actuator_CurrentJS', CurrentJointState, self.cb_calculate_claw_pose)
+        rospy.Subscriber('Actuator_CurrentJS', CurrentJointState, self.cb_calculate_claw_pose)
 
         ## Cube pose ##
         # Publish
-        self.cubePosePub = rospy.Publisher('FK_CubePose', CubePose, queue_size=1)
+        self.cubePosePub = rospy.Publisher('FK_CubePose', CubePose, queue_size=10)
         # Subscribe
-        self.cubePoseSub = rospy.Subscriber('Camera_Pose', CubePose, self.cb_calculate_cube_pose)
+        rospy.Subscriber('Camera_Pose', CubePose, self.cb_calculate_cube_pose)
         
-        rospy.sleep(2)
+        rospy.sleep(2)  # give system time to init everything
         
         
     def test(self):
@@ -161,7 +187,7 @@ class FK_Ibis:
 
         # Joint angles in radians. This includes a joint that does not exist in the first position
         # thetas[0] is not a real joint. Used to so that index number is same as joint number.
-        self.thetas = np.array([0., 0., 0., 0., 0.])
+        self.thetas = np.array([None, 0., 0., 0., 0., 0.])
 
         # Rotational matrices for the camera frame
         self.R1Z = np.array([[0, 0, 1],
@@ -182,7 +208,8 @@ class FK_Ibis:
         # Relative transformation matrices
         self.T1_6 = mr.RpToTrans(self.R16, self.p_6 - np.array([0, 0, self.z1]))  # Camera pose relative to frame {1}
         self.T0_6 = self.T0_1 @ self.T1_6
-
+    
+    """
     def test_camera_to_origin(self):
         self.thetas = np.array([0., 45 * np.pi / 180, 0., 0., 0.])
 
@@ -205,7 +232,7 @@ class FK_Ibis:
         cubePose = self.cb_calculate_cube_pose(msg)
         print(f"Origin cube position = {cubePose.position}")
         print(f"Origin cube position should be [100, 62.2, 50]\n")
-
+    """
 
 if __name__ == '__main__':
     ##np.set_printoptions(precision=2, suppress=True)

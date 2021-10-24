@@ -60,24 +60,20 @@ class IK_Ibis:
         
         # Initialize node
         rospy.init_node('Inverse_Kinematics', anonymous=True, log_level=rospy.DEBUG)
-        # Publish
-        self.pub = rospy.Publisher('IK_JS', TargetJointState, queue_size=1)
-        # Subscribe
-        self.sub = rospy.Subscriber('CL_Position', DesPosition, self.cb_calculate_ik)
         
-        self.test_ik()
+        # Publish
+        self.pub = rospy.Publisher('IK_JS', TargetJointState, queue_size=10)
+        # Subscribe
+        rospy.Subscriber('CL_Position', DesPosition, self.cb_calculate_ik)
+        
+        #self.test_ik()
         
 
     def IKin(self, position, orientation):
     
     
         #rotate0_3 = np.array([[1, 0, 0], [0, -1, 0], [0, 0, -1]])
-    
-            
-        
-        
-    
-    
+   
         # Rotate position to the offset frame for the slew joint
         rotate0_1 = np.array([[np.cos(self.thetaHomeOffset), np.sin(self.thetaHomeOffset), 0],
                               [-1 * np.sin(self.thetaHomeOffset), np.cos(self.thetaHomeOffset), 0],

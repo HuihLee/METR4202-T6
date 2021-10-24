@@ -7,48 +7,15 @@ import numpy as np
 from control_logic_node.msg import TargetJointStateTrajectory, CubePose, DesPosition
 from control_logic_node.msg import TargetJointState, TrajectoryComplete, CurrentJointState, ClawPose
 
-"""
-import rospy
-from Colour.py import Colour
-"""
-"""
-from std_msgs.msg import Float64
-from std_msgs.msg import Bool
-from std_msgs.msg import Header
-from geometry_msgs.msg import Pose
-from sensor_msgs.msg import JointState
-"""
-"""
-# importing sys to import files from different folders
-import sys
-sys.path.insert(0, '') #hierarchy -> '/home/user/folders'
-sys.path.insert(0, '')
-sys.path.insert(0, '')
-sys.path.insert(0, '')
-"""
-
-# import all py files from different packages
-"""
-from import * 
-from import *
-from import *
-from import *
-"""
-""" Operation states of the ibis arm """
-
-
 class OperationState(Enum):
     NORMAL = 0
     TEST_LOOP = 1
     TEST_JOINTS = 2
     TEST_POSITION = 3
 
-
-operationState = OperationState.TEST_JOINTS
+operationState = OperationState.TEST_POSITION
 
 """ Different states of the ibis arm"""
-
-
 class ControlState(Enum):
     ERROR = 0  # Something has gone wrong
     SEARCHING = 1  # Searching for a cube to pick up
@@ -190,9 +157,7 @@ class ControlLogic:
         count = 0
         rospy.sleep(2) # give everything time to init
 
-        operationState = OperationState.TEST_POSITION
         rospy.logerr(operationState)
-        
         self.trajectoryComplete = True
         # TODO: what calls control_logic? -> need to call function here
         while not rospy.is_shutdown():  # maybe this can work?
@@ -203,39 +168,82 @@ class ControlLogic:
             elif operationState is OperationState.TEST_JOINTS:
                 #self.trajectoryComplete = True  #TODO: move back to line 195
                 self.ibisState = ControlState.ZERO
-
-
                 self.joints_loop()
             elif operationState is OperationState.TEST_POSITION:
-                #self.test()
+                self.test_position()
                 rate.sleep()
             else:
                 self.control_loop()
 
-            #rospy.sleep(0.1)
             rospy.sleep(1)
-            
 
-            #rate.sleep()
 
-    def test(self):
+    def test_position(self):
+        # Calculate the required joint positions
+        self.cubePosition = [0, 190, 0, 0]
+        self.calculate_JS()
+
+        rospy.sleep(1)
+
+        # Create a trajectory
         message = TargetJointStateTrajectory()
         message.thetasCurrent = [0.00, 0.00, 0.00, 1.6, 0.]
-        
-        #message.thetasTarget = [0, 0, 0, 1.6, 0.0]
-
-        message.thetasTarget = [0.764, 1.658, -0.59, 1.6, 0.0]
-
+        message.thetasTarget = self.targetJS
         message.motionDuration = 4
         self.trajectory_pub.publish(message)
 
+        rospy.sleep(5)
 
-        message.thetasCurrent = [0.764, 1.658, -0.59, 1.6, 0.0]
-        #message.thetasTarget = [0, 0, 0, 1.6, 0.0]
-        #[0.0, -1.5707963267948966, 0.72640876049004, 0.0, 0.0]
+        message.thetasCurrent = self.targetJS
         message.thetasTarget = [0.00, 0.00, 0.00, 1.6, 0.]
         message.motionDuration = 4
         self.trajectory_pub.publish(message)
+
+        rospy.sleep(5)
+
+        # Calculate the required joint positions
+        self.cubePosition = [0, 190, 0, np.pi/4]
+        self.calculate_JS()
+
+        rospy.sleep(1)
+
+        # Create a trajectory
+        message = TargetJointStateTrajectory()
+        message.thetasCurrent = [0.00, 0.00, 0.00, 1.6, 0.]
+        message.thetasTarget = self.targetJS
+        message.motionDuration = 4
+        self.trajectory_pub.publish(message)
+
+        rospy.sleep(5)
+
+        message.thetasCurrent = self.targetJS
+        message.thetasTarget = [0.00, 0.00, 0.00, 1.6, 0.]
+        message.motionDuration = 4
+        self.trajectory_pub.publish(message)
+
+        rospy.sleep(5)
+
+        # Calculate the required joint positions
+        self.cubePosition = [0, 190, 0, -np.pi * 5/ 4]
+        self.calculate_JS()
+
+        rospy.sleep(1)
+
+        # Create a trajectory
+        message = TargetJointStateTrajectory()
+        message.thetasCurrent = [0.00, 0.00, 0.00, 1.6, 0.]
+        message.thetasTarget = self.targetJS
+        message.motionDuration = 4
+        self.trajectory_pub.publish(message)
+
+        rospy.sleep(5)
+
+        message.thetasCurrent = self.targetJS
+        message.thetasTarget = [0.00, 0.00, 0.00, 1.6, 0.]
+        message.motionDuration = 4
+        self.trajectory_pub.publish(message)
+
+        rospy.sleep(5)
         
     """ Initialise joint positions for cube homes """
 

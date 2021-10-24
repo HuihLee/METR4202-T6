@@ -5,6 +5,10 @@ import modern_robotics as mr
 from control_logic_node.msg import CubePose, ClawPose, CurrentJointState
 """ Helper functions"""
 
+# 0, -7.504, 313.124 -> 0, 190, 10
+# -150, 210.878, 213.077 -> -50, -150, 0
+# 100, 88, 219.464 -> 100, 62.2, 50
+
 
 # Create a 3x3 rotation matrix
 def rot(axis, angle, vect=None, matrix=None):
@@ -39,27 +43,36 @@ class FK_Ibis:
 
     """callbacks"""
     def cb_calculate_claw_pose(self, msg):
-        self.thetas[1:] = np.array(msg.thetas)
+        self.thetas = np.array(msg.thetas)
         self.calculate_transformation_matrices() # For cube pose calculation
-        T0_4 = mr.FKinSpace(self.M, self.screws.T, self.thetas[1:])  # Transformation of claw
-        clawPose = ClawPose()
-        clawPose.position = [T0_4[0][3],  # x
-                             T0_4[1][3],  # y
-                             T0_4[2][3],  # z
-                             np.arccos(T0_4[0][0])]  # theta_z
-        self.clawPosePub.publish(clawPose)
+        #T0_4 = mr.FKinSpace(self.M, self.screws.T, self.thetas[1:])  # Transformation of claw
+        #clawPose = ClawPose()
+        #clawPose.position = [T0_4[0][3],  # x
+        #                     T0_4[1][3],  # y
+        #                     T0_4[2][3],  # z
+        #                     np.arccos(T0_4[0][0])]  # theta_z
+        #self.clawPosePub.publish(clawPose)
 
 
     def cb_calculate_cube_pose(self, msg):
-        self.R6_5 = rot(np.array([0, 0, 1]), msg.position[3])
-        self.r6_5 = np.array([msg.position[0],
-                              msg.position[1],
-                              msg.position[2]])
-        self.T6_5 = np.concatenate((self.R6_5, self.r6_5), axis=1)
-        self.T6_5 = np.concatenate((self.T6_5, np.array([0, 0, 0, 1])), axis=0)
-
+    
+        R6_5 = rot(np.array([0, 0, 1]), 0)
+        cube6_5 = np.array([[msg.position[0]],
+                              [msg.position[1]],
+                              [msg.position[2]]])
+   
+        self.T6_5 = np.concatenate((R6_5, cube6_5), axis=1)
+        
+        self.T6_5 = np.append(self.T6_5, [[0, 0, 0, 1]], axis=0)
+        rospy.logerr("\nT6_5")
+        rospy.logerr(self.T6_5)
+        
         T0_5 = self.T0_6 @ self.T6_5
-
+        rospy.logerr("\nT0_6")
+        rospy.logerr(self.T0_6)
+        rospy.logerr("\nT0_5")
+        rospy.logerr(T0_5)
+        """
         # Ensure that the calculated pose is within the allowable workspace in the xy plane
         for coordinate in range(2):
             value = T0_5[coordinate][3]
@@ -86,13 +99,14 @@ class FK_Ibis:
             T0_5[2][3] = self.workspace_lower_limit[2]
         elif T0_5[2][3] > self.workspace_upper_limit[2]:
             T0_5[2][3] = self.workspace_upper_limit[2]
-
+        """
         cubePose = CubePose()
         cubePose.position = [T0_5[0][3],
                              T0_5[1][3],
                              T0_5[2][3],
                              np.arccos(T0_5[0][0])]
-
+        cubePose.colour = msg.colour
+        rospy.logerr(cubePose)
         self.cubePosePub.publish(cubePose)
 
     """"""
@@ -105,7 +119,7 @@ class FK_Ibis:
 
         ## Claw pose ##
         # Initialize node
-        rospy.init_node('Forward_Kinematics', anonymous=True)
+        rospy.init_node('Forward_Kinematics', anonymous=True, log_level=rospy.DEBUG)
         # Create publisher
         self.clawPosePub = rospy.Publisher('FK_ClawPose', ClawPose, queue_size=1)
         # Create subscriber
@@ -116,11 +130,20 @@ class FK_Ibis:
         self.cubePosePub = rospy.Publisher('FK_CubePose', CubePose, queue_size=1)
         # Subscribe
         self.cubePoseSub = rospy.Subscriber('Camera_Pose', CubePose, self.cb_calculate_cube_pose)
-
+        
+        rospy.sleep(2)
+        self.test()
+        
+    def test(self):
+        rospy.logerr("start test")
+        data = CubePose()
+        data.position = [100, 88, 219.464, 0]
+        data.colour = "RED"
+        self.cb_calculate_cube_pose(data)
 
     def initialise_robot_parameters(self):
         """ Model parameters """
-        self.theta1_home_offset = (157.33 + 90) * (
+        self.theta1_home_offset = (90) * (
                 np.pi / 180)  # rad - this is the home angle of the arm relative to the frame {1} x axis
         self.claw_angle_offset = -15 * (np.pi / 180)  # rad - offset angle for claw relative to armB {2}
         self.z1 = 114.  # mm height of the slew joint {1} from origin
@@ -178,6 +201,7 @@ class FK_Ibis:
 
 
     def calculate_transformation_matrices(self):
+        """
         # Relative transformation matrices
         self.R1 = rot(np.array([0, 0, 1]), self.thetas[1] + self.theta1_home_offset)
         self.T0_1 = mr.RpToTrans(self.R1, np.array([0, 0, self.z1]))  # origin to armA joint
@@ -188,6 +212,9 @@ class FK_Ibis:
         self.R4 = rot(np.array([0, 0, 1]), 0)
         self.T3_4 = mr.RpToTrans(self.R4, np.array([0, 0, (self.z4 - self.z1) +
                                                     self.PITCH * self.thetas[4]]))
+        """                                           
+                                                    # Relative transformation matrices
+        
 
         self.T1_6 = mr.RpToTrans(self.R16, self.r_6 - np.array([0, 0, self.z1]))  # Camera pose relative to frame {1}
         self.T0_6 = self.T0_1 @ self.T1_6

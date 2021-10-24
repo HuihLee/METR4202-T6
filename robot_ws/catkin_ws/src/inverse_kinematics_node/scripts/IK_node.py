@@ -5,6 +5,8 @@ import rospy
 from enum import Enum
 from control_logic_node.msg import DesPosition, TargetJointState
 
+import modern_robotics as mr
+
 class Colour(Enum):
     RED = 0
     GREEN = 1
@@ -92,8 +94,22 @@ class IK_Ibis:
         theta1_1 = gamma + B  # rad
 
         # Rotate desired orientation to the claw frame
-        orientation_arm = -1 * (orientation[2] - (theta1_1 + self.thetaHomeOffset + theta1_2 \
-                          + self.clawAngleOffset) + 45 * np.pi / 180) ## I don't know why 25 degrees is needed here
+        #orientation_arm = -1 * (orientation[2] - (theta1_1 + self.thetaHomeOffset + theta1_2 \
+        #                  + self.clawAngleOffset) + 45 * np.pi / 180) ## I don't know why 25 degrees is needed here
+                          
+        R0_1 = self.rot(np.array([0, 0, 1]), theta1_1 + self.thetaHomeOffset)
+        R1_2 = self.rot(np.array([0, 0, 1]), theta1_2)
+        R2_3_A = self.rot(np.array([0, 0, 1]), self.clawAngleOffset)
+        R2_3_B = self.rot(np.array([0, 1, 0]), np.pi)
+
+
+    
+        R0_C = self.rot(np.array([0, 0, 1]), orientation)
+        R1_C = mr.RotInv(R0_1) @ R0_C
+        R2_C = mr.RotInv(R1_2) @ R1_C
+        R3_C = mr.RotInv(R2_3_B) @ mr.RotInv(R2_3_A) @ R2_C
+        orientation_arm = np.arctan2(R3_C[1][0], R3_C[0][0])
+        
 
         # Limit theta3 angles to +/- pi/2
         theta1_3 = 0
@@ -103,7 +119,17 @@ class IK_Ibis:
             theta1_3 = np.mod(orientation_arm, -1 * np.pi / 2)
 
         return [theta1_1, theta1_2, theta1_3]
-
+    
+    def rot(self, axis, angle, vect=None, matrix=None):
+        I = np.eye(3)
+        skew = mr.VecToso3(axis)
+        rotated = I + np.sin(angle) * skew + (1 - np.cos(angle)) * np.matmul(skew, skew)
+        if vect != None:
+            rotated = rotated * vect
+        elif matrix != None:
+            rotated = rotated * matrix
+        return rotated
+    
     """ Offset theta1 for the slew axis """
     #FIXME: nothing calls this function
     def slew_angle(self, theta_home_offset, theta1):

@@ -70,7 +70,7 @@ class Camera:
                 message.position[3] = yaw            
                 message.colour = colour
                 
-                if colour is not "UNKNOWN":
+                if colour !="UNKNOWN":
                 # print(colour, x, y, z)
                     self.camera_pub.publish(message)
                     

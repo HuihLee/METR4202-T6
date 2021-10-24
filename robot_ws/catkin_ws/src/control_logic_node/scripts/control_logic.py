@@ -160,7 +160,7 @@ class ControlLogic:
 
         # Calculate the IK for each of the cube home
         # positions and add them to an array of joint states
-        self.initialise_cube_home_JS()
+        #self.initialise_cube_home_JS()
         rospy.logerr("init cube home...")
         count = 0
         rospy.sleep(2)  # give everything time to init

@@ -152,31 +152,30 @@ class ControlLogic:
         # Comms with IK node
         self.IK_pub = rospy.Publisher('CL_Position',
                                       DesPosition,
-                                      queue_size=1)
-        self.IK_sub = rospy.Subscriber('IK_JS',
-                                       TargetJointState,
-                                       self.cb_target_js)
+                                      queue_size=10)
+        rospy.Subscriber('IK_JS',
+                           TargetJointState,
+                           self.cb_target_js)
+                                       
         # Comms with Trajectory
         self.trajectory_pub = rospy.Publisher('CL_TargetJS',
                                               TargetJointStateTrajectory,
                                               queue_size=10)
-        self.trajectory_sub = rospy.Subscriber('Trajectory_Status',
-                                               TrajectoryComplete,
-                                               self.cb_trajectory_complete)
-        # Comms with Camera
-        self.camera_sub = rospy.Subscriber('Camera_Pose',
-                                           CubePose,
-                                           self.cb_cubePose)
+        rospy.Subscriber('Trajectory_Status',
+                        TrajectoryComplete,
+                        self.cb_trajectory_complete)
+
         # Comms with actuator
-        ## TODO poll this continuously
-        self.actuator_sub = rospy.Subscriber('Actuator_CurrentJS',
-                                             CurrentJointState,
-                                             self.cb_current_js)
+        rospy.Subscriber('Actuator_CurrentJS',
+                             CurrentJointState,
+                             self.cb_current_js)
 
         self.waiting_bool = False  # bool used idle state
 
         # Comms with FK
-        """Are we using FK node??? I am confused on the structure now"""
+        rospy.Subscriber('FK_CubePose',
+                            CubePose,
+                            self.cb_cubePose)
 
         rate = rospy.Rate(100)  # change hertz??
 
@@ -189,10 +188,11 @@ class ControlLogic:
         # self.initialise_cube_home_JS()
 
         count = 0
-        rospy.sleep(2)
+        rospy.sleep(2) # give everything time to init
 
         operationState = OperationState.TEST_POSITION
         rospy.logerr(operationState)
+        
         self.trajectoryComplete = True
         # TODO: what calls control_logic? -> need to call function here
         while not rospy.is_shutdown():  # maybe this can work?
@@ -207,8 +207,8 @@ class ControlLogic:
 
                 self.joints_loop()
             elif operationState is OperationState.TEST_POSITION:
-                self.test()
-                #rate.sleep()
+                #self.test()
+                rate.sleep()
             else:
                 self.control_loop()
 

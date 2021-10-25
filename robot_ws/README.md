@@ -3,6 +3,7 @@
 The purpose of this robot is to correctly identify and locate a block using fiducials and accurately move a robotic arm over and grab the block. Next the robot must move the block to the correct bin behind and start the entire process again. Whilst this is happening, the blocks will be spinning on a carousel. 
 
 ## Structure
+<pre>
 --> catkin_ws <br/>
     --> src <br/>
         --> Python (modern_robotics library) <br/>
@@ -25,6 +26,7 @@ The purpose of this robot is to correctly identify and locate a block using fidu
         --> trajectory_node <br/>
             --> launch <br/>
             --> scripts <br/>
+</pre>
 
 ## Current setup and installation steps to use robot:
 1. Clone repo

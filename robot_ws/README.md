@@ -2,6 +2,30 @@
 ## File Description for Final METR4202 Robot
 The purpose of this robot is to correctly identify and locate a block using fiducials and accurately move a robotic arm over and grab the block. Next the robot must move the block to the correct bin behind and start the entire process again. Whilst this is happening, the blocks will be spinning on a carousel. 
 
+## Structure
+--> catkin_ws
+    --> src
+        --> Python (modern_robotics library)
+        --> camera_node
+            --> config
+            --> launch
+            --> scripts
+        --> control_logic_node
+            --> launch
+            --> msg
+            --> scripts
+        --> forward_kinematics_node
+            --> scripts
+        --> inverse_kinematics_node
+            --> scripts
+        --> servo_node
+            --> config
+            --> launch
+            --> scripts
+        --> trajectory_node
+            --> launch
+            --> scripts
+
 ## Current setup and installation steps to use robot:
 1. Clone repo
 '''
